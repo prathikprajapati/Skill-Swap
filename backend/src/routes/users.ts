@@ -11,11 +11,12 @@ router.use(authenticateToken);
 // GET /users/me - Get current user profile
 router.get('/me', getProfile);
 
-// PUT /users/me - Update user profile
+// PUT /users/me - Update user profile (with optional avatar upload)
 router.put('/me',
+  uploadAvatar,
+  handleUploadError,
   [
-    body('name').optional().trim().isLength({ min: 1, max: 255 }),
-    body('avatar').optional().isURL()
+    body('name').optional().trim().isLength({ min: 1, max: 255 })
   ],
   updateProfile
 );

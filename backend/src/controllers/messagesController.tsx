@@ -1,11 +1,10 @@
-import type { Response } from 'express';
 import { validationResult } from 'express-validator';
 import { PrismaClient } from '../generated/prisma';
 import type { AuthRequest } from '../types/auth';
 
 const prisma = new PrismaClient();
 
-export const getMatchMessages = async (req: AuthRequest, res: Response) => {
+export const getMessages = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -14,7 +13,7 @@ export const getMatchMessages = async (req: AuthRequest, res: Response) => {
 
     const matchId = req.params.id;
 
-    // Verify user is part of this match
+    // Check if user is part of this match
     const match = await prisma.match.findFirst({
       where: {
         id: matchId,
@@ -26,7 +25,7 @@ export const getMatchMessages = async (req: AuthRequest, res: Response) => {
     });
 
     if (!match) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(404).json({ error: 'Match not found' });
     }
 
     const messages = await prisma.message.findMany({
@@ -41,7 +40,7 @@ export const getMatchMessages = async (req: AuthRequest, res: Response) => {
 
     res.json(messages);
   } catch (error) {
-    console.error('Get match messages error:', error);
+    console.error('Get messages error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -60,7 +59,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
     const { match_id, content } = req.body;
 
-    // Verify user is part of this match
+    // Check if user is part of this match
     const match = await prisma.match.findFirst({
       where: {
         id: match_id,
@@ -72,7 +71,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     });
 
     if (!match) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(404).json({ error: 'Match not found' });
     }
 
     const message = await prisma.message.create({
@@ -104,7 +103,6 @@ export const markMessageAsRead = async (req: AuthRequest, res: Response) => {
 
     const messageId = req.params.id;
 
-    // Verify user can access this message
     const message = await prisma.message.findFirst({
       where: {
         id: messageId,
