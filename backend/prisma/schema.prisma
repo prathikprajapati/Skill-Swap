@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password_hash     String
+  name              String
+  avatar            String?
+  profile_completion Int     @default(0)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  offered_skills    UserSkill[] @relation("UserOfferedSkills")
+  wanted_skills     UserSkill[] @relation("UserWantedSkills")
+  sent_requests     MatchRequest[] @relation("SentRequests")
+  received_requests MatchRequest[] @relation("ReceivedRequests")
+  user1_matches     Match[] @relation("User1Matches")
+  user2_matches     Match[] @relation("User2Matches")
+  sent_messages     Message[] @relation("SentMessages")
+
+  @@map("users")
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String?
+  created_at  DateTime @default(now())
+
+  // Relations
+  user_skills UserSkill[]
+
+  @@map("skills")
+}
+
+model UserSkill {
+  id              String   @id @default(cuid())
+  user_id         String
+  skill_id        String
+  skill_type      SkillType
+  proficiency_level ProficiencyLevel @default(beginner)
+  created_at      DateTime @default(now())
+
+  // Relations
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, skill_id, skill_type])
+  @@map("user_skills")
+}
+
+model MatchRequest {
+  id            String   @id @default(cuid())
+  sender_id     String
+  receiver_id   String
+  status        RequestStatus @default(pending)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  sender   User @relation("SentRequests", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedRequests", fields: [receiver_id], references: [id], onDelete: Cascade)
+
+  @@unique([sender_id, receiver_id])
+  @@map("match_requests")
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  user1_id   String
+  user2_id   String
+  created_at DateTime @default(now())
+
+  // Relations
+  user1 User @relation("User1Matches", fields: [user1_id], references: [id], onDelete: Cascade)
+  user2 User @relation("User2Matches", fields: [user2_id], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([user1_id, user2_id])
+  @@map("matches")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  match_id   String
+  sender_id  String
+  content    String
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  // Relations
+  match  Match @relation(fields: [match_id], references: [id], onDelete: Cascade)
+  sender User  @relation("SentMessages", fields: [sender_id], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum SkillType {
+  offer
+  want
+}
+
+enum ProficiencyLevel {
+  beginner
+  intermediate
+  expert
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  rejected
+}
