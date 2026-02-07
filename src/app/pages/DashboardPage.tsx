@@ -1,19 +1,21 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { MatchCard } from "@/app/components/ui/match-card";
 import { SkillChip } from "@/app/components/ui/skill-chip";
 import { MatchCardSkeleton } from "@/app/components/ui/skeleton";
 import { mockMatches, currentUser } from "@/app/data/mockData";
-import { Users, Target, MessageSquare, Search, SlidersHorizontal } from "lucide-react";
+import { Users, Target, MessageSquare, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
+import SpotlightCard from "@/app/components/ui/SpotlightCard";
 
 export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"score" | "name">("score");
   const [showFilters, setShowFilters] = useState(false);
+  const [displayedMatches, setDisplayedMatches] = useState(6);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   
   const progressPercentage = currentUser.profileCompletion;
-  const circumference = 2 * Math.PI * 45; // radius = 45
-  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
   // Filter and sort matches
   const filteredMatches = useMemo(() => {
@@ -34,53 +36,89 @@ export function DashboardPage() {
     return filtered;
   }, [searchQuery, sortBy]);
 
+  // Infinite scroll effect
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && displayedMatches < filteredMatches.length) {
+          setLoadingMore(true);
+          setTimeout(() => {
+            setDisplayedMatches(prev => Math.min(prev + 6, filteredMatches.length));
+            setLoadingMore(false);
+          }, 1000);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [displayedMatches, filteredMatches.length, loadingMore]);
+
+  // Reset displayed matches when filters change
+  useEffect(() => {
+    setDisplayedMatches(6);
+  }, [searchQuery, sortBy]);
+
   return (
-    <div>
+    <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="mb-8">
+      <div className="mb-8 pb-6 border-b" style={{ borderColor: 'var(--border)' }}>
         <h1 
-          className="text-[32px] mb-2"
-          style={{ color: 'var(--text-primary)', fontWeight: 600 }}
+          className="text-3xl md:text-4xl mb-3 tracking-tight"
+          style={{ color: 'var(--text-primary)', fontWeight: 700 }}
         >
           Welcome back, {currentUser.name.split(' ')[0]}! 👋
         </h1>
         <p 
-          className="text-[16px]"
+          className="text-base md:text-lg"
           style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}
         >
           Find people who complement your skills and start learning today
         </p>
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* Left Column - Match Recommendations (8 columns) */}
-        <div className="col-span-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        {/* Left Column - Match Recommendations */}
+        <div className="lg:col-span-8 space-y-6">
           {/* Search and Filter Section */}
           <div 
-            className="mb-6 p-6 rounded-xl"
-            style={{ backgroundColor: 'var(--section-bg)' }}
+            className="p-6 rounded-2xl border"
+            style={{ 
+              backgroundColor: 'var(--section-bg)',
+              borderColor: 'var(--border)',
+            }}
           >
             <div className="flex items-center gap-3 mb-4">
-              <Users className="w-6 h-6" style={{ color: 'var(--primary)' }} />
+              <div 
+                className="p-2 rounded-xl"
+                style={{ backgroundColor: 'var(--primary-light)' }}
+              >
+                <Users className="w-5 h-5" style={{ color: 'var(--primary)' }} />
+              </div>
               <h2 
-                className="text-[24px] flex-1"
+                className="text-xl md:text-2xl flex-1"
                 style={{ color: 'var(--text-primary)', fontWeight: 600 }}
               >
                 Recommended Matches
               </h2>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="p-2 rounded-lg transition-colors hover:bg-[var(--card)]"
+                className="p-2.5 rounded-xl transition-all duration-200 hover:shadow-md"
+                style={{
+                  backgroundColor: showFilters ? 'var(--accent-indigo)' : 'var(--card)',
+                  color: showFilters ? 'white' : 'var(--text-secondary)',
+                }}
                 aria-label="Toggle filters"
               >
-                <SlidersHorizontal 
-                  className="w-5 h-5" 
-                  style={{ color: showFilters ? 'var(--accent-indigo)' : 'var(--text-secondary)' }} 
-                />
+                <SlidersHorizontal className="w-5 h-5" />
               </button>
             </div>
             <p 
-              className="text-[14px] mb-4"
+              className="text-sm md:text-base mb-4"
               style={{ color: 'var(--text-secondary)' }}
             >
               These users match your learning goals and can benefit from your skills
@@ -89,7 +127,7 @@ export function DashboardPage() {
             {/* Search Bar */}
             <div className="relative">
               <Search 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5" 
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none" 
                 style={{ color: 'var(--text-secondary)' }}
               />
               <input
@@ -97,42 +135,53 @@ export function DashboardPage() {
                 placeholder="Search by name or skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus:ring-2"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl border-2 transition-all duration-200 focus:outline-none"
                 style={{
                   backgroundColor: 'var(--card)',
                   borderColor: 'var(--border)',
                   color: 'var(--text-primary)',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent-indigo)';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-light)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>
 
             {/* Filters (collapsible) */}
             {showFilters && (
-              <div className="mt-4 p-4 rounded-lg animate-in slide-in-from-top-2 fade-in" style={{ backgroundColor: 'var(--card)' }}>
-                <div className="flex items-center gap-4">
-                  <span className="text-[14px]" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <div 
+                className="mt-4 p-4 rounded-xl border animate-in slide-in-from-top-2 fade-in duration-300" 
+                style={{ 
+                  backgroundColor: 'var(--card)',
+                  borderColor: 'var(--border)',
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
                     Sort by:
                   </span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setSortBy("score")}
-                      className="px-4 py-2 rounded-lg text-[13px] transition-all"
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
                       style={{
                         backgroundColor: sortBy === "score" ? 'var(--accent-indigo)' : 'var(--secondary)',
                         color: sortBy === "score" ? 'white' : 'var(--text-secondary)',
-                        fontWeight: sortBy === "score" ? 600 : 400,
                       }}
                     >
                       Match Score
                     </button>
                     <button
                       onClick={() => setSortBy("name")}
-                      className="px-4 py-2 rounded-lg text-[13px] transition-all"
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
                       style={{
                         backgroundColor: sortBy === "name" ? 'var(--accent-indigo)' : 'var(--secondary)',
                         color: sortBy === "name" ? 'white' : 'var(--text-secondary)',
-                        fontWeight: sortBy === "name" ? 600 : 400,
                       }}
                     >
                       Name
@@ -143,45 +192,87 @@ export function DashboardPage() {
             )}
           </div>
           
-          {/* Matches List */}
-          <div className="space-y-4">
+          {/* Matches Grid - Card Layout with Infinite Scroll */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {isLoading ? (
               // Show skeleton loaders
               <>
                 <MatchCardSkeleton />
                 <MatchCardSkeleton />
                 <MatchCardSkeleton />
+                <MatchCardSkeleton />
+                <MatchCardSkeleton />
+                <MatchCardSkeleton />
               </>
             ) : filteredMatches.length > 0 ? (
-              filteredMatches.map((match, index) => (
-                <div 
-                  key={match.id}
-                  className="animate-in fade-in slide-in-from-bottom-4"
-                  style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}
-                >
-                  <MatchCard
-                    user={match}
-                    onSendRequest={() => console.log(`Sending request to ${match.name}`)}
-                  />
-                </div>
-              ))
+              <>
+                {filteredMatches.slice(0, displayedMatches).map((match, index) => (
+                  <div
+                    key={match.id}
+                    className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
+                  >
+                    <MatchCard
+                      user={match}
+                      onSendRequest={() => console.log(`Sending request to ${match.name}`)}
+                    />
+                  </div>
+                ))}
+
+                {/* Infinite Scroll Trigger */}
+                {displayedMatches < filteredMatches.length && (
+                  <div ref={loadMoreRef} className="col-span-full flex justify-center py-8">
+                    {loadingMore ? (
+                      <div 
+                        className="flex items-center gap-3 px-6 py-3 rounded-full"
+                        style={{ backgroundColor: 'var(--section-bg)' }}
+                      >
+                        <div 
+                          className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent"
+                          style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+                        />
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                          Loading more matches...
+                        </span>
+                      </div>
+                    ) : (
+                      <div 
+                        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm cursor-pointer transition-all hover:shadow-md"
+                        style={{ 
+                          backgroundColor: 'var(--card)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid var(--border)',
+                        }}
+                      >
+                        <ChevronDown className="w-4 h-4 animate-bounce" />
+                        Scroll for more
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
-              <div 
-                className="p-16 text-center rounded-xl"
-                style={{ backgroundColor: 'var(--section-bg)' }}
+              <div
+                className="col-span-full p-12 md:p-16 text-center rounded-2xl border"
+                style={{ 
+                  backgroundColor: 'var(--section-bg)',
+                  borderColor: 'var(--border)',
+                }}
               >
-                <Search 
-                  className="w-16 h-16 mx-auto mb-4 opacity-30" 
-                  style={{ color: 'var(--text-secondary)' }} 
-                />
-                <p 
-                  className="text-[18px] mb-2"
+                <div 
+                  className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--card)' }}
+                >
+                  <Search className="w-10 h-10" style={{ color: 'var(--text-disabled)' }} />
+                </div>
+                <p
+                  className="text-lg md:text-xl mb-2"
                   style={{ color: 'var(--text-primary)', fontWeight: 600 }}
                 >
                   No matches found
                 </p>
-                <p 
-                  className="text-[14px]"
+                <p
+                  className="text-sm md:text-base max-w-md mx-auto"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   Try adjusting your search or add more skills to your profile
@@ -191,55 +282,63 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Column - Sidebar (4 columns) */}
-        <div className="col-span-4 space-y-6">
+        {/* Right Column - Sidebar */}
+        <div className="lg:col-span-4 space-y-5">
           {/* Profile Completion Card */}
-          <div 
-            className="p-6 rounded-xl border transition-all duration-300 hover:shadow-md"
-            style={{
-              backgroundColor: 'var(--card)',
-              borderColor: 'var(--border)',
-            }}
+          <SpotlightCard 
+            className="h-[260px] w-full flex flex-col p-5 transition-all duration-300 hover:shadow-lg"
+            spotlightColor="rgba(245, 158, 11, 0.15)"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <Target className="w-5 h-5" style={{ color: 'var(--accent)' }} />
+            <div className="flex items-center gap-2.5 mb-4 shrink-0">
+              <div 
+                className="p-1.5 rounded-lg"
+                style={{ backgroundColor: 'var(--accent-light)' }}
+              >
+                <Target className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              </div>
               <h3 
-                className="text-[18px]"
-                style={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                className="text-sm font-semibold"
+                style={{ color: 'var(--text-primary)' }}
               >
                 Profile Completion
               </h3>
             </div>
             
-            <div className="flex items-center justify-center mb-4">
+            {/* Divider */}
+            <div 
+              className="w-full h-px mb-4 shrink-0"
+              style={{ backgroundColor: 'var(--border)' }}
+            />
+            
+            <div className="flex-1 flex items-center justify-center min-h-0">
               {/* Circular Progress */}
-              <div className="relative w-32 h-32">
-                <svg className="transform -rotate-90 w-32 h-32">
+              <div className="relative w-24 h-24">
+                <svg className="transform -rotate-90 w-24 h-24">
                   <circle
-                    cx="64"
-                    cy="64"
-                    r="45"
+                    cx="48"
+                    cy="48"
+                    r="40"
                     stroke="var(--secondary)"
-                    strokeWidth="8"
+                    strokeWidth="5"
                     fill="none"
                   />
                   <circle
-                    cx="64"
-                    cy="64"
-                    r="45"
+                    cx="48"
+                    cy="48"
+                    r="40"
                     stroke="var(--accent)"
-                    strokeWidth="8"
+                    strokeWidth="5"
                     fill="none"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
+                    strokeDasharray={2 * Math.PI * 40}
+                    strokeDashoffset={2 * Math.PI * 40 - (progressPercentage / 100) * 2 * Math.PI * 40}
                     strokeLinecap="round"
-                    className="transition-all duration-1000"
+                    className="transition-all duration-1000 ease-out"
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span 
-                    className="text-[28px]"
-                    style={{ color: 'var(--accent)', fontWeight: 600 }}
+                    className="text-xl font-bold"
+                    style={{ color: 'var(--accent)' }}
                   >
                     {progressPercentage}%
                   </span>
@@ -248,109 +347,156 @@ export function DashboardPage() {
             </div>
             
             <p 
-              className="text-[14px] text-center"
-              style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}
+              className="text-xs text-center leading-relaxed mt-auto shrink-0"
+              style={{ color: 'var(--text-secondary)' }}
             >
-              Add more skills to get better match recommendations 🎯
+              Add more skills for better matches 🎯
             </p>
-          </div>
+          </SpotlightCard>
 
           {/* Skills Summary Card */}
-          <div 
-            className="p-6 rounded-xl border transition-all duration-300 hover:shadow-md"
-            style={{
-              backgroundColor: 'var(--card)',
-              borderColor: 'var(--border)',
-            }}
+          <SpotlightCard
+            className="h-[300px] w-full flex flex-col p-5 transition-all duration-300 hover:shadow-lg cursor-pointer group"
+            spotlightColor="rgba(99, 102, 241, 0.15)"
           >
             <h3 
-              className="text-[18px] mb-4"
-              style={{ color: 'var(--text-primary)', fontWeight: 600 }}
+              className="text-sm font-semibold mb-3 shrink-0"
+              style={{ color: 'var(--text-primary)' }}
             >
               Your Skills Summary
             </h3>
 
-            {/* Offered Skills */}
-            <div className="mb-5">
-              <p 
-                className="text-[12px] mb-2"
-                style={{ color: 'var(--text-secondary)', fontWeight: 600 }}
-              >
-                YOU CAN TEACH ({currentUser.offeredSkills.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {currentUser.offeredSkills.map((skill) => (
-                  <SkillChip key={skill} skill={skill} type="offer" size="sm" />
-                ))}
-              </div>
-            </div>
+            {/* Divider */}
+            <div 
+              className="w-full h-px mb-3 shrink-0"
+              style={{ backgroundColor: 'var(--border)' }}
+            />
 
-            {/* Wanted Skills */}
-            <div>
-              <p 
-                className="text-[12px] mb-2"
-                style={{ color: 'var(--text-secondary)', fontWeight: 600 }}
-              >
-                YOU WANT TO LEARN ({currentUser.wantedSkills.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {currentUser.wantedSkills.map((skill) => (
-                  <SkillChip key={skill} skill={skill} type="want" size="sm" />
-                ))}
+            <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
+              {/* Offered Skills */}
+              <div className="shrink-0">
+                <p 
+                  className="text-[10px] font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Can Teach ({currentUser.offeredSkills.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {currentUser.offeredSkills.slice(0, 4).map((skill) => (
+                    <SkillChip key={skill} skill={skill} type="offer" size="sm" />
+                  ))}
+                  {currentUser.offeredSkills.length > 4 && (
+                    <span 
+                      className="text-[10px] px-2 py-1 rounded-full font-medium"
+                      style={{ 
+                        backgroundColor: 'var(--secondary)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      +{currentUser.offeredSkills.length - 4}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Divider between sections */}
+              <div 
+                className="w-full h-px shrink-0"
+                style={{ backgroundColor: 'var(--border)', opacity: 0.5 }}
+              />
+
+              {/* Wanted Skills */}
+              <div className="shrink-0">
+                <p 
+                  className="text-[10px] font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Want to Learn ({currentUser.wantedSkills.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {currentUser.wantedSkills.slice(0, 4).map((skill) => (
+                    <SkillChip key={skill} skill={skill} type="want" size="sm" />
+                  ))}
+                  {currentUser.wantedSkills.length > 4 && (
+                    <span 
+                      className="text-[10px] px-2 py-1 rounded-full font-medium"
+                      style={{ 
+                        backgroundColor: 'var(--secondary)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      +{currentUser.wantedSkills.length - 4}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </SpotlightCard>
 
           {/* Quick Stats Card */}
-          <div 
-            className="p-6 rounded-xl border transition-all duration-300 hover:shadow-md"
-            style={{
-              backgroundColor: 'var(--card)',
-              borderColor: 'var(--border)',
-            }}
+          <SpotlightCard 
+            className="h-[220px] w-full flex flex-col p-5 transition-all duration-300 hover:shadow-lg"
+            spotlightColor="rgba(16, 185, 129, 0.15)"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <MessageSquare className="w-5 h-5" style={{ color: 'var(--primary)' }} />
+            <div className="flex items-center gap-2.5 mb-4 shrink-0">
+              <div 
+                className="p-1.5 rounded-lg"
+                style={{ backgroundColor: 'var(--primary-light)' }}
+              >
+                <MessageSquare className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+              </div>
               <h3 
-                className="text-[18px]"
-                style={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                className="text-sm font-semibold"
+                style={{ color: 'var(--text-primary)' }}
               >
                 Activity
               </h3>
             </div>
 
-            <div className="space-y-3">
-              <div 
-                className="flex justify-between items-center p-3 rounded-lg transition-all hover:scale-[1.02]"
-                style={{ backgroundColor: 'var(--section-bg)' }}
+            {/* Divider */}
+            <div 
+              className="w-full h-px mb-4 shrink-0"
+              style={{ backgroundColor: 'var(--border)' }}
+            />
+
+            <div className="flex-1 flex flex-col gap-2.5 min-h-0">
+              <div
+                className="flex justify-between items-center px-3 py-3 rounded-lg transition-all duration-200 hover:shadow-sm"
+                style={{
+                  backgroundColor: 'var(--section-bg)',
+                  border: '1px solid var(--border)',
+                }}
               >
-                <span style={{ color: 'var(--text-secondary)' }} className="text-[14px]">
+                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                   Active Matches
                 </span>
-                <span 
-                  className="text-[20px]"
-                  style={{ color: 'var(--accent)', fontWeight: 600 }}
+                <span
+                  className="text-lg font-bold"
+                  style={{ color: 'var(--accent)' }}
                 >
                   2
                 </span>
               </div>
-              
-              <div 
-                className="flex justify-between items-center p-3 rounded-lg transition-all hover:scale-[1.02]"
-                style={{ backgroundColor: 'var(--section-bg)' }}
+
+              <div
+                className="flex justify-between items-center px-3 py-3 rounded-lg transition-all duration-200 hover:shadow-sm"
+                style={{
+                  backgroundColor: 'var(--section-bg)',
+                  border: '1px solid var(--border)',
+                }}
               >
-                <span style={{ color: 'var(--text-secondary)' }} className="text-[14px]">
+                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                   Pending Requests
                 </span>
-                <span 
-                  className="text-[20px]"
-                  style={{ color: 'var(--warning)', fontWeight: 600 }}
+                <span
+                  className="text-lg font-bold"
+                  style={{ color: 'var(--warning)' }}
                 >
                   3
                 </span>
               </div>
             </div>
-          </div>
+          </SpotlightCard>
         </div>
       </div>
     </div>

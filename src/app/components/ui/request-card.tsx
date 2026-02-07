@@ -2,6 +2,7 @@ import { Button } from "@/app/components/ui/skill-swap-button";
 import { SkillChip } from "@/app/components/ui/skill-chip";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
+import SpotlightCard from "./SpotlightCard";
 
 export interface RequestCardProps {
   user: {
@@ -33,106 +34,143 @@ export function RequestCard({ user, type, onAccept, onReject }: RequestCardProps
     }, 300);
   };
 
+  // Different spotlight colors based on type
+  const spotlightColor = type === "incoming" 
+    ? "rgba(34, 197, 94, 0.15)"  // Green tint for incoming
+    : "rgba(99, 102, 241, 0.15)"; // Indigo tint for sent
+
   return (
-    <div 
-      className={`p-6 rounded-xl border transition-all duration-300 ${
-        type === "incoming" ? "hover:shadow-lg hover:-translate-y-1" : ""
-      } ${isAccepting ? "animate-out fade-out slide-out-to-right-4" : ""} ${
-        isRejecting ? "animate-out fade-out slide-out-to-left-4" : ""
-      }`}
-      style={{
-        backgroundColor: 'var(--card)',
-        borderColor: type === "incoming" ? 'var(--accent)' : 'var(--border)',
-        borderWidth: type === "incoming" ? '2px' : '1px',
-        boxShadow: type === "incoming" ? '0 0 0 4px rgba(111, 177, 160, 0.1)' : 'none',
-      }}
+    <SpotlightCard 
+      className={`h-[300px] w-full flex flex-col transition-all duration-300 hover:-translate-y-1 ${
+        isAccepting ? "animate-out fade-out slide-out-to-right-4" : ""
+      } ${isRejecting ? "animate-out fade-out slide-out-to-left-4" : ""}`}
+      spotlightColor={spotlightColor as `rgba(${number}, ${number}, ${number}, ${number})`}
     >
-      <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="flex-shrink-0">
-          <div
-            className="w-14 h-14 rounded-full bg-cover bg-center ring-2 ring-offset-2"
-            style={{ 
-              backgroundImage: `url(${user.avatar})`,
-              ringColor: type === "incoming" ? 'var(--accent-light)' : 'var(--border)',
-            }}
-          />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[16px] mb-3" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+      {/* Header - Avatar & Name */}
+      <div className="flex items-center gap-3 mb-3 shrink-0">
+        <div
+          className="w-11 h-11 rounded-full bg-cover bg-center flex-shrink-0"
+          style={{ 
+            backgroundImage: `url(${user.avatar})`,
+            boxShadow: type === "incoming" 
+              ? '0 0 0 2px var(--accent-light)' 
+              : '0 0 0 2px var(--border)',
+          }}
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold truncate leading-tight" style={{ color: 'var(--text-primary)' }}>
             {user.name}
-            {type === "incoming" && (
-              <span 
-                className="ml-2 text-[12px] px-2 py-0.5 rounded-full"
-                style={{ 
-                  backgroundColor: 'var(--accent-light)',
-                  color: 'var(--accent)',
-                  fontWeight: 600,
-                }}
-              >
-                New
-              </span>
-            )}
           </h3>
-
-          {/* Offered Skills */}
-          <div className="mb-3">
-            <p className="text-[12px] mb-2" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
-              CAN TEACH
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {user.offeredSkills.map((skill) => (
-                <SkillChip key={skill} skill={skill} type="offer" size="sm" />
-              ))}
-            </div>
-          </div>
-
-          {/* Wanted Skills */}
-          <div className="mb-4">
-            <p className="text-[12px] mb-2" style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
-              WANTS TO LEARN
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {user.wantedSkills.map((skill) => (
-                <SkillChip key={skill} skill={skill} type="want" size="sm" />
-              ))}
-            </div>
-          </div>
-
-          {/* Action Buttons - Only for incoming requests */}
           {type === "incoming" && (
-            <div className="flex gap-2">
-              <Button onClick={handleAccept} size="sm" className="flex-1">
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Accept
-              </Button>
-              <Button onClick={handleReject} variant="outline" size="sm" className="flex-1">
-                <XCircle className="w-4 h-4 mr-1" />
-                Reject
-              </Button>
-            </div>
-          )}
-
-          {/* Status for sent requests */}
-          {type === "sent" && (
-            <div 
-              className="text-[13px] px-3 py-2 rounded-lg inline-flex items-center gap-2"
+            <span 
+              className="inline-block text-[10px] px-1.5 py-0.5 rounded font-semibold mt-0.5"
               style={{ 
-                backgroundColor: 'var(--secondary)',
-                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--accent-light)',
+                color: 'var(--accent)',
               }}
             >
-              <div 
-                className="w-2 h-2 rounded-full animate-pulse"
-                style={{ backgroundColor: 'var(--warning)' }}
-              />
-              Pending Response
-            </div>
+              New Request
+            </span>
           )}
         </div>
       </div>
-    </div>
+
+      {/* Divider */}
+      <div 
+        className="w-full h-px mb-3 shrink-0"
+        style={{ backgroundColor: 'var(--border)' }}
+      />
+
+      {/* Skills Sections - Fixed Height with consistent spacing */}
+      <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
+        {/* Offered Skills */}
+        <div className="shrink-0">
+          <p 
+            className="text-[10px] font-semibold uppercase tracking-wider mb-2"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Can Teach
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {user.offeredSkills.slice(0, 3).map((skill) => (
+              <SkillChip key={skill} skill={skill} type="offer" size="sm" />
+            ))}
+            {user.offeredSkills.length > 3 && (
+              <span 
+                className="text-[10px] px-2 py-1 rounded-full font-medium"
+                style={{ 
+                  backgroundColor: 'var(--secondary)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                +{user.offeredSkills.length - 3}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Divider between sections */}
+        <div 
+          className="w-full h-px shrink-0"
+          style={{ backgroundColor: 'var(--border)', opacity: 0.5 }}
+        />
+
+        {/* Wanted Skills */}
+        <div className="shrink-0">
+          <p 
+            className="text-[10px] font-semibold uppercase tracking-wider mb-2"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Wants to Learn
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {user.wantedSkills.slice(0, 3).map((skill) => (
+              <SkillChip key={skill} skill={skill} type="want" size="sm" />
+            ))}
+            {user.wantedSkills.length > 3 && (
+              <span 
+                className="text-[10px] px-2 py-1 rounded-full font-medium"
+                style={{ 
+                  backgroundColor: 'var(--secondary)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                +{user.wantedSkills.length - 3}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Action Area - Fixed at Bottom with consistent spacing */}
+      <div className="mt-auto pt-4 shrink-0">
+        {type === "incoming" ? (
+          <div className="flex gap-2">
+            <Button onClick={handleAccept} size="sm" className="flex-1">
+              <CheckCircle className="w-3.5 h-3.5 mr-1" />
+              Accept
+            </Button>
+            <Button onClick={handleReject} variant="outline" size="sm" className="flex-1">
+              <XCircle className="w-3.5 h-3.5 mr-1" />
+              Decline
+            </Button>
+          </div>
+        ) : (
+          <div 
+            className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium"
+            style={{ 
+              backgroundColor: 'var(--secondary)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <div 
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: 'var(--warning)' }}
+            />
+            Pending Response
+          </div>
+        )}
+      </div>
+    </SpotlightCard>
   );
 }
