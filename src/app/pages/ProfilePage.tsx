@@ -85,14 +85,14 @@ export function ProfilePage() {
     setTimeout(() => setShowSuccessFeedback(false), 2000);
   };
 
-  // Profile stats for MagicBento
+  // Profile stats for MagicBento - Action-oriented milestones
   const profileStats = [
-    { color: '#1e1b4b', title: 'Skills Shared', description: `${offeredSkills.length} teaching`, label: 'Teaching' },
-    { color: '#1e1b4b', title: 'Learning', description: `${wantedSkills.length} targeted`, label: 'Growth' },
-    { color: '#1e1b4b', title: 'Level ' + levelInfo.level, description: levelInfo.title, label: 'XP' },
+    { color: '#1e1b4b', title: 'Teaching', description: `${offeredSkills.length} skills shared`, label: 'Teaching' },
+    { color: '#1e1b4b', title: 'Learning', description: `${wantedSkills.length} goals set`, label: 'Growth' },
+    { color: '#1e1b4b', title: `Level ${levelInfo.level}`, description: `${userXP}/${levelInfo.nextLevel} XP`, label: 'XP' },
     { color: '#1e1b4b', title: '12 Day Streak', description: 'Keep it up! 🔥', label: 'Streak' },
     { color: '#1e1b4b', title: '4.9 Rating', description: 'Top 10% rated', label: 'Stars' },
-    { color: '#1e1b4b', title: '23 Swaps', description: 'Completed', label: 'Done' }
+    { color: '#1e1b4b', title: '23 Swaps', description: 'Completed sessions', label: 'Done' }
   ];
 
   // Profile completion calculation
@@ -116,12 +116,25 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-[1400px] pb-20">
-      {/* Hero Profile Card */}
-      <div className="relative mb-8 rounded-3xl overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-8 text-white shadow-2xl">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
+      {/* Hero Profile Card - Solid dark blue with subtle glow */}
+      <div 
+        className="relative mb-8 rounded-3xl overflow-hidden p-8 text-white shadow-2xl"
+        style={{ 
+          backgroundColor: '#1A1A2E',
+          boxShadow: '0 0 60px rgba(99, 102, 241, 0.15), 0 4px 20px rgba(0, 0, 0, 0.3)',
+        }}
+      >
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
         <div className="relative flex items-start gap-6">
           <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl font-bold border-2 border-white/30 shadow-lg">
+            <div 
+              className="w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold border-2 shadow-lg"
+              style={{ 
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderColor: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(10px)',
+              }}
+            >
               {currentUser.name.charAt(0)}
             </div>
             <div 
@@ -134,32 +147,38 @@ export function ProfilePage() {
 
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold">{currentUser.name}</h1>
-              <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium flex items-center gap-1">
+              <h1 className="text-3xl font-bold" style={{ color: '#FFFFFF' }}>{currentUser.name}</h1>
+              <span 
+                className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"
+                style={{ backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}
+              >
                 <Sparkles className="w-4 h-4" />
                 Pro
               </span>
               {strengthInfo.label === "All-Star" && (
-                <span className="px-3 py-1 rounded-full bg-yellow-400/30 text-yellow-100 text-sm font-medium flex items-center gap-1">
+                <span 
+                  className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"
+                  style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)', color: '#FDE047' }}
+                >
                   <Star className="w-4 h-4" />
                   All-Star
                 </span>
               )}
             </div>
-            <p className="text-white/80 mb-4">{currentUser.email}</p>
+            <p className="mb-4" style={{ color: 'rgba(255,255,255,0.7)' }}>{currentUser.email}</p>
             
             <div className="flex items-center gap-4 max-w-md">
               <div className="flex-1">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">{levelInfo.title}</span>
-                  <span className="text-white/70">{userXP} / {levelInfo.nextLevel} XP</span>
+                  <span className="font-medium" style={{ color: '#FFFFFF' }}>{levelInfo.title}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>{userXP} / {levelInfo.nextLevel} XP</span>
                 </div>
-                <div className="h-2 bg-black/20 rounded-full overflow-hidden">
+                <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
                   <div 
                     className="h-full rounded-full transition-all duration-500"
                     style={{ 
                       width: `${xpProgress}%`, 
-                      background: `linear-gradient(90deg, ${levelInfo.color}, white)` 
+                      background: `linear-gradient(90deg, ${levelInfo.color}, #8b5cf6)` 
                     }}
                   />
                 </div>
@@ -168,16 +187,30 @@ export function ProfilePage() {
           </div>
 
           <div className="flex gap-2">
-            <button className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-sm">
+            <button 
+              className="p-3 rounded-xl transition-all backdrop-blur-sm"
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+            >
               <Camera className="w-5 h-5" />
             </button>
             <button 
-              className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-sm"
+              className="p-3 rounded-xl transition-all backdrop-blur-sm flex items-center gap-2"
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
               onClick={() => setIsEditing(!isEditing)}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
             >
               <Edit3 className="w-5 h-5" />
+              <span className="text-sm font-medium">Edit Profile</span>
             </button>
-            <button className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-sm">
+            <button 
+              className="p-3 rounded-xl transition-all backdrop-blur-sm"
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+            >
               <Share2 className="w-5 h-5" />
             </button>
           </div>
@@ -223,7 +256,7 @@ export function ProfilePage() {
       <div className="grid grid-cols-12 gap-6 mb-8">
         {/* Left Side - MagicBento (70%) */}
         <div className="col-span-8">
-          <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#E0E0E0', fontWeight: 500 }}>
             Your Journey
           </h2>
           <MagicBento
@@ -280,7 +313,7 @@ export function ProfilePage() {
 
             <div className="min-h-[120px]">
               {(activeTab === "teaching" ? offeredSkills : wantedSkills).length > 0 ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                   {(activeTab === "teaching" ? offeredSkills : wantedSkills).slice(0, 6).map((skill, index) => (
                     <div 
                       key={skill}
@@ -299,6 +332,16 @@ export function ProfilePage() {
                       +{(activeTab === "teaching" ? offeredSkills : wantedSkills).length - 6} more
                     </span>
                   )}
+                  <button 
+                    onClick={() => {
+                      setNewSkillType(activeTab === "teaching" ? "offer" : "want");
+                      setShowAddSkillModal(true);
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all flex items-center gap-1 border border-indigo-500/30"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add
+                  </button>
                 </div>
               ) : (
                 <div className="text-center py-4">
@@ -356,9 +399,9 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* Achievements - Full Width */}
+      {/* Achievements - Full Width with tooltips */}
       <div className="mb-8">
-        <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: '#E0E0E0', fontWeight: 500 }}>
           Achievements
         </h2>
         <div className="grid grid-cols-6 gap-3">
@@ -374,8 +417,10 @@ export function ProfilePage() {
                 }`}
                 style={{
                   backgroundColor: achievement.unlocked ? achievement.color + '10' : 'var(--section-bg)',
-                  borderColor: achievement.unlocked ? achievement.color + '40' : 'var(--border)',
+                  borderColor: achievement.unlocked ? achievement.color + '40' : '#2D2D2D',
+                  borderRadius: '8px',
                 }}
+                title={`${achievement.title}: ${achievement.desc}`}
               >
                 <div 
                   className="w-10 h-10 rounded-lg flex items-center justify-center mb-2"
@@ -383,8 +428,11 @@ export function ProfilePage() {
                 >
                   <Icon className="w-5 h-5" style={{ color: achievement.unlocked ? achievement.color : 'var(--text-disabled)' }} />
                 </div>
-                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                <p className="text-xs font-medium" style={{ color: '#E0E0E0', fontWeight: 500 }}>
                   {achievement.title}
+                </p>
+                <p className="text-[10px] mt-1" style={{ color: '#BDBDBD' }}>
+                  {achievement.desc}
                 </p>
                 {achievement.unlocked && (
                   <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: achievement.color }} />
@@ -395,12 +443,12 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* Theme Cards - All in Single Line */}
-      <div className="mb-13">
-        <h2 className="text-xlg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+      {/* Theme Cards - All in Single Line with improved spacing */}
+      <div className="mb-2">
+        <h2 className="text-xl font-semibold mb-6" style={{ color: '#E0E0E0', fontWeight: 500 }}>
           Choose Your Vibe
         </h2>
-        <div className="flex gap-10 overflow-x-auto justify-center pb-3 -mx-3 px-5 p-5">
+        <div className="flex gap-6 overflow-x-auto justify-center p-4 -mx-3 px-6">
           {allThemes.map((theme) => {
             const Icon = theme.icon;
             const themeData = themes[theme.id];
@@ -410,14 +458,15 @@ export function ProfilePage() {
               <button
                 key={theme.id}
                 onClick={() => setTheme(theme.id)}
-                className={`flex-shrink-0 p-3 rounded-xl border-2 transition-all duration-300 hover:scale-105 group text-left w-[140px] bg-gradient-to-br ${theme.bg} ${
+                className={`flex-shrink-0 p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group text-left w-[150px] bg-gradient-to-br ${theme.bg} ${
                   isActive ? 'ring-2 ring-offset-2 ring-indigo-500 scale-105 shadow-lg' : 'hover:shadow-md'
                 }`}
                 style={{ 
                   borderColor: isActive ? themeData.colors["--primary"] : 'transparent',
+                  borderRadius: '8px',
                 }}
               >
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center justify-between mb-4">
                   <div 
                     className="w-8 h-8 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: themeData.colors["--primary"] + '20' }}
@@ -430,10 +479,10 @@ export function ProfilePage() {
                     </div>
                   )}
                 </div>
-                <h3 className={`font-bold text-xs mb-0.5 ${theme.isDark ? 'text-white' : 'text-gray-800'}`}>
+                <h3 className={`font-semibold text-sm mb-1 ${theme.isDark ? 'text-white' : 'text-gray-800'}`} style={{ fontWeight: 500 }}>
                   {themeData.name}
                 </h3>
-                <p className={`text-[11px] leading-tight ${theme.isDark ? 'text-white/70' : 'text-gray-600'}`}>
+                <p className={`text-xs leading-relaxed ${theme.isDark ? 'text-white/70' : 'text-gray-600'}`} style={{ fontSize: '14px' }}>
                   {themeData.description}
                 </p>
               </button>

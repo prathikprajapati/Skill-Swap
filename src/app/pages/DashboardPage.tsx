@@ -3,7 +3,7 @@ import { MatchCard } from "@/app/components/ui/match-card";
 import { SkillChip } from "@/app/components/ui/skill-chip";
 import { MatchCardSkeleton } from "@/app/components/ui/skeleton";
 import { mockMatches, currentUser } from "@/app/data/mockData";
-import { Users, Target, MessageSquare, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Users, Target, MessageSquare, Search, SlidersHorizontal, ChevronDown, Sparkles, Filter } from "lucide-react";
 import SpotlightCard from "@/app/components/ui/SpotlightCard";
 
 export function DashboardPage() {
@@ -13,9 +13,13 @@ export function DashboardPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [displayedMatches, setDisplayedMatches] = useState(6);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [activeFilterChips, setActiveFilterChips] = useState<string[]>([]);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
   const progressPercentage = currentUser.profileCompletion;
+
+  // Filter chips for skill-based filtering
+  const filterChips = ["Teaching", "Learning", "High Match", "New"];
 
   // Filter and sort matches
   const filteredMatches = useMemo(() => {
@@ -26,6 +30,14 @@ export function DashboardPage() {
       return matchesSearch;
     });
 
+    // Apply filter chips
+    if (activeFilterChips.includes("High Match")) {
+      filtered = filtered.filter(m => m.matchScore >= 85);
+    }
+    if (activeFilterChips.includes("New")) {
+      filtered = filtered.filter(m => m.matchScore >= 90);
+    }
+
     // Sort matches
     if (sortBy === "score") {
       filtered.sort((a, b) => b.matchScore - a.matchScore);
@@ -34,7 +46,13 @@ export function DashboardPage() {
     }
 
     return filtered;
-  }, [searchQuery, sortBy]);
+  }, [searchQuery, sortBy, activeFilterChips]);
+
+  const toggleFilterChip = (chip: string) => {
+    setActiveFilterChips(prev => 
+      prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]
+    );
+  };
 
   // Infinite scroll effect
   useEffect(() => {
@@ -89,7 +107,8 @@ export function DashboardPage() {
             className="p-6 rounded-2xl border"
             style={{ 
               backgroundColor: 'var(--section-bg)',
-              borderColor: 'var(--border)',
+              borderColor: '#2D2D2D',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             }}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -101,7 +120,7 @@ export function DashboardPage() {
               </div>
               <h2 
                 className="text-xl md:text-2xl flex-1"
-                style={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                style={{ color: '#E0E0E0', fontWeight: 600 }}
               >
                 Recommended Matches
               </h2>
@@ -119,13 +138,13 @@ export function DashboardPage() {
             </div>
             <p 
               className="text-sm md:text-base mb-4"
-              style={{ color: 'var(--text-secondary)' }}
+              style={{ color: '#BDBDBD', lineHeight: 1.6 }}
             >
               These users match your learning goals and can benefit from your skills
             </p>
 
             {/* Search Bar */}
-            <div className="relative">
+            <div className="relative mb-4">
               <Search 
                 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none" 
                 style={{ color: 'var(--text-secondary)' }}
@@ -138,18 +157,37 @@ export function DashboardPage() {
                 className="w-full pl-12 pr-4 py-3.5 rounded-xl border-2 transition-all duration-200 focus:outline-none"
                 style={{
                   backgroundColor: 'var(--card)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)',
+                  borderColor: '#2D2D2D',
+                  color: '#E0E0E0',
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = 'var(--accent-indigo)';
                   e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-light)';
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.borderColor = '#2D2D2D';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               />
+            </div>
+
+            {/* Filter Chips */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Filter className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              {filterChips.map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => toggleFilterChip(chip)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: activeFilterChips.includes(chip) ? 'var(--accent-indigo)' : 'var(--secondary)',
+                    color: activeFilterChips.includes(chip) ? 'white' : '#BDBDBD',
+                    border: '1px solid #2D2D2D',
+                  }}
+                >
+                  {chip}
+                </button>
+              ))}
             </div>
 
             {/* Filters (collapsible) */}
@@ -158,11 +196,11 @@ export function DashboardPage() {
                 className="mt-4 p-4 rounded-xl border animate-in slide-in-from-top-2 fade-in duration-300" 
                 style={{ 
                   backgroundColor: 'var(--card)',
-                  borderColor: 'var(--border)',
+                  borderColor: '#2D2D2D',
                 }}
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="text-sm font-semibold" style={{ color: '#BDBDBD' }}>
                     Sort by:
                   </span>
                   <div className="flex gap-2">
@@ -171,7 +209,7 @@ export function DashboardPage() {
                       className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
                       style={{
                         backgroundColor: sortBy === "score" ? 'var(--accent-indigo)' : 'var(--secondary)',
-                        color: sortBy === "score" ? 'white' : 'var(--text-secondary)',
+                        color: sortBy === "score" ? 'white' : '#BDBDBD',
                       }}
                     >
                       Match Score
@@ -181,7 +219,7 @@ export function DashboardPage() {
                       className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
                       style={{
                         backgroundColor: sortBy === "name" ? 'var(--accent-indigo)' : 'var(--secondary)',
-                        color: sortBy === "name" ? 'white' : 'var(--text-secondary)',
+                        color: sortBy === "name" ? 'white' : '#BDBDBD',
                       }}
                     >
                       Name
@@ -193,7 +231,7 @@ export function DashboardPage() {
           </div>
           
           {/* Matches Grid - Card Layout with Infinite Scroll */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {isLoading ? (
               // Show skeleton loaders
               <>
@@ -215,6 +253,7 @@ export function DashboardPage() {
                     <MatchCard
                       user={match}
                       onSendRequest={() => console.log(`Sending request to ${match.name}`)}
+                      isNewMatch={match.matchScore >= 90}
                     />
                   </div>
                 ))}
@@ -256,7 +295,8 @@ export function DashboardPage() {
                 className="col-span-full p-12 md:p-16 text-center rounded-2xl border"
                 style={{ 
                   backgroundColor: 'var(--section-bg)',
-                  borderColor: 'var(--border)',
+                  borderColor: '#2D2D2D',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 }}
               >
                 <div 
@@ -267,13 +307,13 @@ export function DashboardPage() {
                 </div>
                 <p
                   className="text-lg md:text-xl mb-2"
-                  style={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                  style={{ color: '#E0E0E0', fontWeight: 600 }}
                 >
                   No matches found
                 </p>
                 <p
                   className="text-sm md:text-base max-w-md mx-auto"
-                  style={{ color: 'var(--text-secondary)' }}
+                  style={{ color: '#BDBDBD' }}
                 >
                   Try adjusting your search or add more skills to your profile
                 </p>
@@ -283,7 +323,7 @@ export function DashboardPage() {
         </div>
 
         {/* Right Column - Sidebar */}
-        <div className="lg:col-span-4 space-y-5">
+        <div className="lg:col-span-4 space-y-6">
           {/* Profile Completion Card */}
           <SpotlightCard 
             className="h-[260px] w-full flex flex-col p-5 transition-all duration-300 hover:shadow-lg"
@@ -298,7 +338,7 @@ export function DashboardPage() {
               </div>
               <h3 
                 className="text-sm font-semibold"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: '#E0E0E0' }}
               >
                 Profile Completion
               </h3>
@@ -307,7 +347,7 @@ export function DashboardPage() {
             {/* Divider */}
             <div 
               className="w-full h-px mb-4 shrink-0"
-              style={{ backgroundColor: 'var(--border)' }}
+              style={{ backgroundColor: '#2D2D2D' }}
             />
             
             <div className="flex-1 flex items-center justify-center min-h-0">
@@ -348,7 +388,7 @@ export function DashboardPage() {
             
             <p 
               className="text-xs text-center leading-relaxed mt-auto shrink-0"
-              style={{ color: 'var(--text-secondary)' }}
+              style={{ color: '#BDBDBD' }}
             >
               Add more skills for better matches 🎯
             </p>
@@ -361,7 +401,7 @@ export function DashboardPage() {
           >
             <h3 
               className="text-sm font-semibold mb-3 shrink-0"
-              style={{ color: 'var(--text-primary)' }}
+              style={{ color: '#E0E0E0' }}
             >
               Your Skills Summary
             </h3>
@@ -369,7 +409,7 @@ export function DashboardPage() {
             {/* Divider */}
             <div 
               className="w-full h-px mb-3 shrink-0"
-              style={{ backgroundColor: 'var(--border)' }}
+              style={{ backgroundColor: '#2D2D2D' }}
             />
 
             <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
@@ -377,7 +417,7 @@ export function DashboardPage() {
               <div className="shrink-0">
                 <p 
                   className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: 'var(--text-secondary)' }}
+                  style={{ color: '#BDBDBD' }}
                 >
                   Can Teach ({currentUser.offeredSkills.length})
                 </p>
@@ -402,14 +442,14 @@ export function DashboardPage() {
               {/* Divider between sections */}
               <div 
                 className="w-full h-px shrink-0"
-                style={{ backgroundColor: 'var(--border)', opacity: 0.5 }}
+                style={{ backgroundColor: '#2D2D2D', opacity: 0.5 }}
               />
 
               {/* Wanted Skills */}
               <div className="shrink-0">
                 <p 
                   className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: 'var(--text-secondary)' }}
+                  style={{ color: '#BDBDBD' }}
                 >
                   Want to Learn ({currentUser.wantedSkills.length})
                 </p>
@@ -447,7 +487,7 @@ export function DashboardPage() {
               </div>
               <h3 
                 className="text-sm font-semibold"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: '#E0E0E0' }}
               >
                 Activity
               </h3>
@@ -456,7 +496,7 @@ export function DashboardPage() {
             {/* Divider */}
             <div 
               className="w-full h-px mb-4 shrink-0"
-              style={{ backgroundColor: 'var(--border)' }}
+              style={{ backgroundColor: '#2D2D2D' }}
             />
 
             <div className="flex-1 flex flex-col gap-2.5 min-h-0">
@@ -464,10 +504,10 @@ export function DashboardPage() {
                 className="flex justify-between items-center px-3 py-3 rounded-lg transition-all duration-200 hover:shadow-sm"
                 style={{
                   backgroundColor: 'var(--section-bg)',
-                  border: '1px solid var(--border)',
+                  border: '1px solid #2D2D2D',
                 }}
               >
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                <span className="text-xs font-medium" style={{ color: '#BDBDBD' }}>
                   Active Matches
                 </span>
                 <span
@@ -482,10 +522,10 @@ export function DashboardPage() {
                 className="flex justify-between items-center px-3 py-3 rounded-lg transition-all duration-200 hover:shadow-sm"
                 style={{
                   backgroundColor: 'var(--section-bg)',
-                  border: '1px solid var(--border)',
+                  border: '1px solid #2D2D2D',
                 }}
               >
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                <span className="text-xs font-medium" style={{ color: '#BDBDBD' }}>
                   Pending Requests
                 </span>
                 <span

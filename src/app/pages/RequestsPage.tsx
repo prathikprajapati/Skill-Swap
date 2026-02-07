@@ -3,9 +3,9 @@ import { RequestCard } from "@/app/components/ui/request-card";
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { useToast } from "@/app/components/ui/Toast";
 import { mockIncomingRequests, mockSentRequests } from "@/app/data/mockData";
-import { Inbox, Send, ChevronDown } from "lucide-react";
+import { Inbox, Send, ChevronDown, Clock, History } from "lucide-react";
 
-type TabType = "incoming" | "sent";
+type TabType = "incoming" | "sent" | "history";
 
 export function RequestsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("incoming");
@@ -13,6 +13,8 @@ export function RequestsPage() {
   const [sentRequests] = useState(mockSentRequests);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [requestToReject, setRequestToReject] = useState<string | null>(null);
+  const [showDeclineReason, setShowDeclineReason] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
   const { showToast } = useToast();
 
   // Infinite scroll states
@@ -37,8 +39,10 @@ export function RequestsPage() {
   const handleRejectConfirm = () => {
     if (requestToReject) {
       setIncomingRequests(incomingRequests.filter((req) => req.id !== requestToReject));
-      showToast("info", "Request declined");
+      showToast("info", declineReason ? `Request declined. Reason: ${declineReason}` : "Request declined");
       setRequestToReject(null);
+      setDeclineReason("");
+      setShowDeclineReason(false);
     }
     setShowRejectConfirm(false);
   };
@@ -96,29 +100,29 @@ export function RequestsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8 pb-6 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div className="mb-8 pb-6 border-b" style={{ borderColor: '#2D2D2D' }}>
         <h2 
           className="text-3xl md:text-4xl mb-3 tracking-tight"
-          style={{ color: 'var(--text-primary)', fontWeight: 700 }}
+          style={{ color: '#E0E0E0', fontWeight: 700 }}
         >
           Match Requests
         </h2>
         <p 
           className="text-base md:text-lg"
-          style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}
+          style={{ color: '#BDBDBD', lineHeight: 1.6 }}
         >
           Review incoming requests and track your sent requests
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div className="mb-6 border-b" style={{ borderColor: '#2D2D2D' }}>
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab("incoming")}
             className="pb-4 px-4 relative transition-all duration-200 flex items-center gap-2 rounded-t-lg"
             style={{
-              color: activeTab === "incoming" ? 'var(--accent-indigo)' : 'var(--text-secondary)',
+              color: activeTab === "incoming" ? 'var(--accent-indigo)' : '#BDBDBD',
               fontWeight: activeTab === "incoming" ? 600 : 400,
               backgroundColor: activeTab === "incoming" ? 'var(--section-bg)' : 'transparent',
             }}
@@ -129,7 +133,7 @@ export function RequestsPage() {
               <span 
                 className="px-2 py-0.5 rounded-full text-xs min-w-[20px] text-center font-semibold"
                 style={{
-                  backgroundColor: 'var(--accent-indigo)',
+                  backgroundColor: '#FF6B6B',
                   color: 'white',
                 }}
               >
@@ -148,7 +152,7 @@ export function RequestsPage() {
             onClick={() => setActiveTab("sent")}
             className="pb-4 px-4 relative transition-all duration-200 flex items-center gap-2 rounded-t-lg"
             style={{
-              color: activeTab === "sent" ? 'var(--accent-indigo)' : 'var(--text-secondary)',
+              color: activeTab === "sent" ? 'var(--accent-indigo)' : '#BDBDBD',
               fontWeight: activeTab === "sent" ? 600 : 400,
               backgroundColor: activeTab === "sent" ? 'var(--section-bg)' : 'transparent',
             }}
@@ -159,7 +163,7 @@ export function RequestsPage() {
               <span 
                 className="px-2 py-0.5 rounded-full text-xs min-w-[20px] text-center font-semibold"
                 style={{
-                  backgroundColor: 'var(--text-secondary)',
+                  backgroundColor: '#6C63FF',
                   color: 'white',
                 }}
               >
@@ -167,6 +171,25 @@ export function RequestsPage() {
               </span>
             )}
             {activeTab === "sent" && (
+              <div 
+                className="absolute bottom-0 left-0 right-0 h-0.5" 
+                style={{ backgroundColor: 'var(--accent-indigo)' }}
+              />
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("history")}
+            className="pb-4 px-4 relative transition-all duration-200 flex items-center gap-2 rounded-t-lg"
+            style={{
+              color: activeTab === "history" ? 'var(--accent-indigo)' : '#BDBDBD',
+              fontWeight: activeTab === "history" ? 600 : 400,
+              backgroundColor: activeTab === "history" ? 'var(--section-bg)' : 'transparent',
+            }}
+          >
+            <History className="w-4 h-4" />
+            <span className="text-sm">History</span>
+            {activeTab === "history" && (
               <div 
                 className="absolute bottom-0 left-0 right-0 h-0.5" 
                 style={{ backgroundColor: 'var(--accent-indigo)' }}
@@ -339,12 +362,79 @@ export function RequestsPage() {
 
       {/* Reject Confirm Modal */}
       <ConfirmModal
-        isOpen={showRejectConfirm}
+        isOpen={showRejectConfirm && !showDeclineReason}
         onClose={() => setShowRejectConfirm(false)}
-        onConfirm={handleRejectConfirm}
+        onConfirm={() => setShowDeclineReason(true)}
         title="Decline Request"
         message="Are you sure you want to decline this request?"
+        confirmText="Add Reason"
+        cancelText="Cancel"
+        variant="warning"
       />
+
+      {/* Decline Reason Modal */}
+      {showDeclineReason && (
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => {
+            setShowDeclineReason(false);
+            setShowRejectConfirm(false);
+            setDeclineReason("");
+          }}
+        >
+          <div 
+            className="w-full max-w-[420px] rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 fade-in duration-200"
+            style={{ backgroundColor: 'var(--card)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 
+              className="text-[20px] mb-4"
+              style={{ color: '#E0E0E0', fontWeight: 600 }}
+            >
+              Decline Reason (Optional)
+            </h3>
+            <textarea
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+              placeholder="e.g., Schedule conflict, Not interested, etc."
+              className="w-full px-3 py-2 rounded-lg border text-sm mb-4"
+              style={{
+                backgroundColor: 'var(--section-bg)',
+                borderColor: '#2D2D2D',
+                color: '#E0E0E0',
+                minHeight: '100px',
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeclineReason(false);
+                  setShowRejectConfirm(false);
+                  setDeclineReason("");
+                }}
+                className="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all"
+                style={{ 
+                  backgroundColor: 'var(--secondary)', 
+                  color: '#BDBDBD',
+                  border: '1px solid #2D2D2D',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectConfirm}
+                className="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all"
+                style={{ 
+                  backgroundColor: 'var(--accent-indigo)', 
+                  color: 'white',
+                }}
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
