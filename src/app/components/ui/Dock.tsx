@@ -199,8 +199,9 @@ export default function Dock({
         style={{
           borderColor: "var(--border)",
           backgroundColor: "var(--card)",
+          height: panelHeight,
         }}
-        style={{ height: panelHeight }}
+
         role="toolbar"
         aria-label="Application dock"
       >

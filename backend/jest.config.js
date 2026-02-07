@@ -9,6 +9,16 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@prisma)/)',
+  ],
+  moduleNameMapper: {
+    '^@prisma/client$': '<rootDir>/src/generated/prisma',
+  },
+
+
+
+
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/generated/**',

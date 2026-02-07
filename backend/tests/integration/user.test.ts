@@ -1,10 +1,11 @@
-import request from 'supertest';
-import { PrismaClient } from '../../src/generated/prisma';
-import app from '../../src/server';
+import request from "supertest";
+import { PrismaClient } from "@prisma/client";
+
+import app from "../../src/server";
 
 const prisma = new PrismaClient();
 
-describe('User Profile Endpoints', () => {
+describe("User Profile Endpoints", () => {
   let authToken: string;
   let userId: string;
 
@@ -18,13 +19,11 @@ describe('User Profile Endpoints', () => {
     await prisma.user.deleteMany();
 
     // Create test user
-    const signupResponse = await request(app)
-      .post('/auth/signup')
-      .send({
-        email: 'testuser@example.com',
-        password: 'password123',
-        name: 'Test User'
-      });
+    const signupResponse = await request(app).post("/auth/signup").send({
+      email: "testuser@example.com",
+      password: "password123",
+      name: "Test User",
+    });
 
     authToken = signupResponse.body.token;
     userId = signupResponse.body.user.id;
@@ -34,46 +33,47 @@ describe('User Profile Endpoints', () => {
     await prisma.$disconnect();
   });
 
-  describe('GET /users/me', () => {
-    it('should return current user profile', async () => {
+  describe("GET /users/me", () => {
+    it("should return current user profile", async () => {
       const response = await request(app)
-        .get('/users/me')
-        .set('Authorization', `Bearer ${authToken}`)
+        .get("/users/me")
+        .set("Authorization", `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('id', userId);
-      expect(response.body).toHaveProperty('email', 'testuser@example.com');
-      expect(response.body).toHaveProperty('name', 'Test User');
+      expect(response.body).toHaveProperty("id", userId);
+      expect(response.body).toHaveProperty("email", "testuser@example.com");
+      expect(response.body).toHaveProperty("name", "Test User");
     });
 
-    it('should return 401 without authentication', async () => {
-      await request(app)
-        .get('/users/me')
-        .expect(401);
+    it("should return 401 without authentication", async () => {
+      await request(app).get("/users/me").expect(401);
     });
   });
 
-  describe('PUT /users/me', () => {
-    it('should update user profile', async () => {
+  describe("PUT /users/me", () => {
+    it("should update user profile", async () => {
       const updateData = {
-        name: 'Updated Name',
-        avatar: 'https://example.com/avatar.jpg'
+        name: "Updated Name",
+        avatar: "https://example.com/avatar.jpg",
       };
 
       const response = await request(app)
-        .put('/users/me')
-        .set('Authorization', `Bearer ${authToken}`)
+        .put("/users/me")
+        .set("Authorization", `Bearer ${authToken}`)
         .send(updateData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('name', 'Updated Name');
-      expect(response.body).toHaveProperty('avatar', 'https://example.com/avatar.jpg');
+      expect(response.body).toHaveProperty("name", "Updated Name");
+      expect(response.body).toHaveProperty(
+        "avatar",
+        "https://example.com/avatar.jpg",
+      );
     });
 
-    it('should return 401 without authentication', async () => {
+    it("should return 401 without authentication", async () => {
       await request(app)
-        .put('/users/me')
-        .send({ name: 'New Name' })
+        .put("/users/me")
+        .send({ name: "New Name" })
         .expect(401);
     });
   });

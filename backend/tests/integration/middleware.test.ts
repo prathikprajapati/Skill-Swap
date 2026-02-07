@@ -1,10 +1,11 @@
-import request from 'supertest';
-import { PrismaClient } from '../../src/generated/prisma';
-import app from '../../src/server';
+import request from "supertest";
+import { PrismaClient } from "@prisma/client";
+
+import app from "../../src/server";
 
 const prisma = new PrismaClient();
 
-describe('Authentication Middleware', () => {
+describe("Authentication Middleware", () => {
   let authToken: string;
 
   beforeAll(async () => {
@@ -17,13 +18,11 @@ describe('Authentication Middleware', () => {
     await prisma.user.deleteMany();
 
     // Create test user
-    const signupResponse = await request(app)
-      .post('/auth/signup')
-      .send({
-        email: 'middleware@example.com',
-        password: 'password123',
-        name: 'Middleware User'
-      });
+    const signupResponse = await request(app).post("/auth/signup").send({
+      email: "middleware@example.com",
+      password: "password123",
+      name: "Middleware User",
+    });
 
     authToken = signupResponse.body.token;
   });
@@ -32,81 +31,75 @@ describe('Authentication Middleware', () => {
     await prisma.$disconnect();
   });
 
-  describe('Protected Routes', () => {
-    it('should allow access with valid JWT token', async () => {
+  describe("Protected Routes", () => {
+    it("should allow access with valid JWT token", async () => {
       const response = await request(app)
-        .get('/users/me')
-        .set('Authorization', `Bearer ${authToken}`)
+        .get("/users/me")
+        .set("Authorization", `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('email', 'middleware@example.com');
+      expect(response.body).toHaveProperty("id");
+      expect(response.body).toHaveProperty("email", "middleware@example.com");
     });
 
-    it('should deny access without Authorization header', async () => {
+    it("should deny access without Authorization header", async () => {
+      await request(app).get("/users/me").expect(401);
+    });
+
+    it("should deny access with invalid token", async () => {
       await request(app)
-        .get('/users/me')
+        .get("/users/me")
+        .set("Authorization", "Bearer invalid-token")
         .expect(401);
     });
 
-    it('should deny access with invalid token', async () => {
+    it("should deny access with malformed Authorization header", async () => {
       await request(app)
-        .get('/users/me')
-        .set('Authorization', 'Bearer invalid-token')
+        .get("/users/me")
+        .set("Authorization", "InvalidFormat")
         .expect(401);
     });
 
-    it('should deny access with malformed Authorization header', async () => {
-      await request(app)
-        .get('/users/me')
-        .set('Authorization', 'InvalidFormat')
-        .expect(401);
-    });
-
-    it('should deny access with expired token', async () => {
+    it("should deny access with expired token", async () => {
       // Create a token that expires immediately for testing
-      const jwt = require('jsonwebtoken');
+      const jwt = require("jsonwebtoken");
       const expiredToken = jwt.sign(
-        { id: 'test-id' },
-        process.env.JWT_SECRET || 'fallback-secret',
-        { expiresIn: '-1h' } // Already expired
+        { id: "test-id" },
+        process.env.JWT_SECRET || "fallback-secret",
+        { expiresIn: "-1h" }, // Already expired
       );
 
       await request(app)
-        .get('/users/me')
-        .set('Authorization', `Bearer ${expiredToken}`)
+        .get("/users/me")
+        .set("Authorization", `Bearer ${expiredToken}`)
         .expect(401);
     });
   });
 
-  describe('Public Routes', () => {
-    it('should allow access to public routes without authentication', async () => {
-      await request(app)
-        .get('/health')
-        .expect(200);
+  describe("Public Routes", () => {
+    it("should allow access to public routes without authentication", async () => {
+      await request(app).get("/health").expect(200);
     });
 
-    it('should allow access to auth routes without authentication', async () => {
+    it("should allow access to auth routes without authentication", async () => {
       await request(app)
-        .post('/auth/signup')
+        .post("/auth/signup")
         .send({
-          email: 'public@example.com',
-          password: 'password123',
-          name: 'Public User'
+          email: "public@example.com",
+          password: "password123",
+          name: "Public User",
         })
         .expect(201);
     });
   });
 
-  describe('CORS Headers', () => {
-    it('should include CORS headers in responses', async () => {
-      const response = await request(app)
-        .options('/users/me')
-        .expect(200);
+  describe("CORS Headers", () => {
+    it("should include CORS headers in responses", async () => {
+      const response = await request(app).options("/users/me").expect(200);
 
-      expect(response.headers).toHaveProperty('access-control-allow-origin');
-      expect(response.headers).toHaveProperty('access-control-allow-methods');
-      expect(response.headers).toHaveProperty('access-control-allow-headers');
+      expect(response.headers).toHaveProperty("access-control-allow-origin");
+      expect(response.headers).toHaveProperty("access-control-allow-methods");
+      expect(response.headers).toHaveProperty("access-control-allow-headers");
     });
   });
 });

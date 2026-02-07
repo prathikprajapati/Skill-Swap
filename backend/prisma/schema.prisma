@@ -2,13 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -22,8 +20,7 @@ model User {
   updated_at        DateTime @updatedAt
 
   // Relations
-  offered_skills    UserSkill[] @relation("UserOfferedSkills")
-  wanted_skills     UserSkill[] @relation("UserWantedSkills")
+  user_skills       UserSkill[]
   sent_requests     MatchRequest[] @relation("SentRequests")
   received_requests MatchRequest[] @relation("ReceivedRequests")
   user1_matches     Match[] @relation("User1Matches")
@@ -54,8 +51,8 @@ model UserSkill {
   created_at      DateTime @default(now())
 
   // Relations
-  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  skill Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "UserSkill_user_fkey")
+  skill Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade, map: "UserSkill_skill_fkey")
 
   @@unique([user_id, skill_id, skill_type])
   @@map("user_skills")
