@@ -127,14 +127,17 @@ describe("Matching Algorithm", () => {
     const userOfferedSkillIds = user.offered_skills.map((us) => us.skill_id);
     const userWantedSkillIds = user.wanted_skills.map((us) => us.skill_id);
 
+    // Get matched offers and wants (new format)
+    const matchedOffers = user.offered_skills
+      .filter((us) => wantedSkillIds.includes(us.skill_id))
+      .map((us) => us.skill.name);
+
+    const matchedWants = user.wanted_skills
+      .filter((us) => offeredSkillIds.includes(us.skill_id))
+      .map((us) => us.skill.name);
+
     // Mutual matches
-    const mutualOffers = userOfferedSkillIds.filter((id) =>
-      wantedSkillIds.includes(id),
-    ).length;
-    const mutualWants = userWantedSkillIds.filter((id) =>
-      offeredSkillIds.includes(id),
-    ).length;
-    const mutualMatches = mutualOffers + mutualWants;
+    const mutualMatches = matchedOffers.length + matchedWants.length;
 
     // Skill overlap
     const allUserSkills = [...userOfferedSkillIds, ...userWantedSkillIds];
@@ -148,13 +151,17 @@ describe("Matching Algorithm", () => {
     // Profile completion
     const profileCompletion = user.profile_completion / 100;
 
-    // Calculate score
-    const score =
+    // Calculate score (0-100 integer)
+    const rawScore =
       mutualMatches * 0.5 + skillOverlap * 0.3 + profileCompletion * 0.2;
+    const score = Math.round(rawScore * 100);
 
     expect(mutualMatches).toBe(3); // JS, Python, React all match
     expect(skillOverlap).toBe(1); // All skills overlap (3/3)
-    expect(score).toBeGreaterThan(0.5); // Should be a high score
+    expect(score).toBeGreaterThan(50); // Should be a high score (0-100 range)
+    expect(matchedOffers).toContain("Python");
+    expect(matchedOffers).toContain("React");
+    expect(matchedWants).toContain("JavaScript");
   });
 
   it("should exclude already matched users", async () => {

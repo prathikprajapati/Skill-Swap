@@ -1,74 +1,48 @@
-import { PrismaClient } from '../src/generated/prisma';
+import "dotenv/config";
+import {
+  PrismaClient,
+  SkillType,
+  ProficiencyLevel,
+  RequestStatus,
+} from "@prisma/client";
+import bcrypt from "bcrypt";
 
+// Simple PrismaClient without adapter - using environment variable
 const prisma = new PrismaClient();
 
-const skills = [
-  // Programming Languages
-  { name: 'JavaScript', category: 'Programming' },
-  { name: 'TypeScript', category: 'Programming' },
-  { name: 'Python', category: 'Programming' },
-  { name: 'Java', category: 'Programming' },
-  { name: 'C++', category: 'Programming' },
-  { name: 'C#', category: 'Programming' },
-  { name: 'Go', category: 'Programming' },
-  { name: 'Rust', category: 'Programming' },
-  { name: 'PHP', category: 'Programming' },
-  { name: 'Ruby', category: 'Programming' },
-
-  // Web Development
-  { name: 'React', category: 'Web Development' },
-  { name: 'Vue.js', category: 'Web Development' },
-  { name: 'Angular', category: 'Web Development' },
-  { name: 'Node.js', category: 'Web Development' },
-  { name: 'Express.js', category: 'Web Development' },
-  { name: 'Next.js', category: 'Web Development' },
-  { name: 'HTML', category: 'Web Development' },
-  { name: 'CSS', category: 'Web Development' },
-  { name: 'SASS/SCSS', category: 'Web Development' },
-
-  // Mobile Development
-  { name: 'React Native', category: 'Mobile Development' },
-  { name: 'Flutter', category: 'Mobile Development' },
-  { name: 'iOS Development', category: 'Mobile Development' },
-  { name: 'Android Development', category: 'Mobile Development' },
-
-  // Data Science & AI
-  { name: 'Machine Learning', category: 'Data Science' },
-  { name: 'Data Analysis', category: 'Data Science' },
-  { name: 'TensorFlow', category: 'Data Science' },
-  { name: 'PyTorch', category: 'Data Science' },
-  { name: 'Pandas', category: 'Data Science' },
-  { name: 'NumPy', category: 'Data Science' },
-
-  // DevOps & Cloud
-  { name: 'Docker', category: 'DevOps' },
-  { name: 'Kubernetes', category: 'DevOps' },
-  { name: 'AWS', category: 'Cloud' },
-  { name: 'Azure', category: 'Cloud' },
-  { name: 'Google Cloud', category: 'Cloud' },
-  { name: 'CI/CD', category: 'DevOps' },
-  { name: 'Linux', category: 'DevOps' },
-
-  // Design
-  { name: 'UI/UX Design', category: 'Design' },
-  { name: 'Figma', category: 'Design' },
-  { name: 'Adobe XD', category: 'Design' },
-  { name: 'Photoshop', category: 'Design' },
-  { name: 'Illustrator', category: 'Design' },
-
-  // Other Skills
-  { name: 'Project Management', category: 'Business' },
-  { name: 'Agile/Scrum', category: 'Business' },
-  { name: 'SQL', category: 'Database' },
-  { name: 'MongoDB', category: 'Database' },
-  { name: 'PostgreSQL', category: 'Database' },
-  { name: 'Git', category: 'Tools' },
-  { name: 'Testing', category: 'Quality Assurance' }
-];
-
 async function main() {
-  console.log('Seeding skills...');
+  console.log("🌱 Starting database seed...");
 
+  // Create initial skills
+  const skills = [
+    { name: "JavaScript", category: "Programming" },
+    { name: "Python", category: "Programming" },
+    { name: "React", category: "Frontend" },
+    { name: "Node.js", category: "Backend" },
+    { name: "TypeScript", category: "Programming" },
+    { name: "HTML/CSS", category: "Frontend" },
+    { name: "Git", category: "Tools" },
+    { name: "SQL", category: "Database" },
+    { name: "MongoDB", category: "Database" },
+    { name: "Docker", category: "DevOps" },
+    { name: "AWS", category: "Cloud" },
+    { name: "Figma", category: "Design" },
+    { name: "UI/UX Design", category: "Design" },
+    { name: "Photography", category: "Creative" },
+    { name: "Video Editing", category: "Creative" },
+    { name: "Spanish", category: "Language" },
+    { name: "French", category: "Language" },
+    { name: "German", category: "Language" },
+    { name: "Public Speaking", category: "Soft Skills" },
+    { name: "Leadership", category: "Soft Skills" },
+    { name: "Guitar", category: "Music" },
+    { name: "Piano", category: "Music" },
+    { name: "Cooking", category: "Lifestyle" },
+    { name: "Fitness Training", category: "Health" },
+    { name: "Yoga", category: "Health" },
+  ];
+
+  console.log("📚 Creating skills...");
   for (const skill of skills) {
     await prisma.skill.upsert({
       where: { name: skill.name },
@@ -77,12 +51,233 @@ async function main() {
     });
   }
 
-  console.log('Seeding completed!');
+  // Create test users
+  const hashedPassword = await bcrypt.hash("password123", 12);
+
+  console.log("👥 Creating test users...");
+
+  const user1 = await prisma.user.upsert({
+    where: { email: "alice@example.com" },
+    update: {},
+    create: {
+      email: "alice@example.com",
+      password_hash: hashedPassword,
+      name: "Alice Johnson",
+      profile_completion: 85,
+    },
+  });
+
+  const user2 = await prisma.user.upsert({
+    where: { email: "bob@example.com" },
+    update: {},
+    create: {
+      email: "bob@example.com",
+      password_hash: hashedPassword,
+      name: "Bob Smith",
+      profile_completion: 70,
+    },
+  });
+
+  const user3 = await prisma.user.upsert({
+    where: { email: "carol@example.com" },
+    update: {},
+    create: {
+      email: "carol@example.com",
+      password_hash: hashedPassword,
+      name: "Carol Williams",
+      profile_completion: 90,
+    },
+  });
+
+  // Get all skills for reference
+  const allSkills = await prisma.skill.findMany();
+
+  const getSkillId = (name: string) =>
+    allSkills.find((s) => s.name === name)?.id!;
+
+  console.log("🎯 Creating user skills...");
+
+  // Alice's skills
+  await prisma.userSkill.createMany({
+    data: [
+      {
+        user_id: user1.id,
+        skill_id: getSkillId("JavaScript"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.expert,
+      },
+      {
+        user_id: user1.id,
+        skill_id: getSkillId("React"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.expert,
+      },
+      {
+        user_id: user1.id,
+        skill_id: getSkillId("Python"),
+        skill_type: SkillType.want,
+        proficiency_level: ProficiencyLevel.beginner,
+      },
+      {
+        user_id: user1.id,
+        skill_id: getSkillId("Guitar"),
+        skill_type: SkillType.want,
+        proficiency_level: ProficiencyLevel.beginner,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Bob's skills
+  await prisma.userSkill.createMany({
+    data: [
+      {
+        user_id: user2.id,
+        skill_id: getSkillId("Python"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.expert,
+      },
+      {
+        user_id: user2.id,
+        skill_id: getSkillId("Node.js"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.intermediate,
+      },
+      {
+        user_id: user2.id,
+        skill_id: getSkillId("JavaScript"),
+        skill_type: SkillType.want,
+        proficiency_level: ProficiencyLevel.intermediate,
+      },
+      {
+        user_id: user2.id,
+        skill_id: getSkillId("Guitar"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.expert,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Carol's skills
+  await prisma.userSkill.createMany({
+    data: [
+      {
+        user_id: user3.id,
+        skill_id: getSkillId("UI/UX Design"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.expert,
+      },
+      {
+        user_id: user3.id,
+        skill_id: getSkillId("Figma"),
+        skill_type: SkillType.offer,
+        proficiency_level: ProficiencyLevel.expert,
+      },
+      {
+        user_id: user3.id,
+        skill_id: getSkillId("React"),
+        skill_type: SkillType.want,
+        proficiency_level: ProficiencyLevel.intermediate,
+      },
+      {
+        user_id: user3.id,
+        skill_id: getSkillId("TypeScript"),
+        skill_type: SkillType.want,
+        proficiency_level: ProficiencyLevel.beginner,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log("📨 Creating match requests...");
+
+  // Create a pending request from Bob to Alice
+  await prisma.matchRequest.upsert({
+    where: {
+      sender_id_receiver_id: {
+        sender_id: user2.id,
+        receiver_id: user1.id,
+      },
+    },
+    update: {},
+    create: {
+      sender_id: user2.id,
+      receiver_id: user1.id,
+      status: RequestStatus.pending,
+    },
+  });
+
+  // Create an accepted match between Alice and Carol
+  const request = await prisma.matchRequest.upsert({
+    where: {
+      sender_id_receiver_id: {
+        sender_id: user1.id,
+        receiver_id: user3.id,
+      },
+    },
+    update: { status: RequestStatus.accepted },
+    create: {
+      sender_id: user1.id,
+      receiver_id: user3.id,
+      status: RequestStatus.accepted,
+    },
+  });
+
+  // Create the match record
+  const match = await prisma.match.upsert({
+    where: {
+      user1_id_user2_id: {
+        user1_id: user1.id,
+        user2_id: user3.id,
+      },
+    },
+    update: {},
+    create: {
+      user1_id: user1.id,
+      user2_id: user3.id,
+    },
+  });
+
+  console.log("💬 Creating messages...");
+
+  // Create some messages between Alice and Carol
+  await prisma.message.createMany({
+    data: [
+      {
+        match_id: match.id,
+        sender_id: user1.id,
+        content:
+          "Hi Carol! I saw you want to learn React. I can help with that!",
+        is_read: true,
+      },
+      {
+        match_id: match.id,
+        sender_id: user3.id,
+        content:
+          "Hey Alice! That would be amazing! I can teach you Figma in exchange.",
+        is_read: true,
+      },
+      {
+        match_id: match.id,
+        sender_id: user1.id,
+        content: "Perfect! When are you free for our first session?",
+        is_read: false,
+      },
+    ],
+  });
+
+  console.log("✅ Seed completed successfully!");
+  console.log("");
+  console.log("📋 Test Accounts:");
+  console.log("  Alice: alice@example.com / password123");
+  console.log("  Bob: bob@example.com / password123");
+  console.log("  Carol: carol@example.com / password123");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Seed failed:", e);
     process.exit(1);
   })
   .finally(async () => {

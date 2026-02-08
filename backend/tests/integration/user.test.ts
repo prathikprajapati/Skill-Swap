@@ -63,8 +63,8 @@ describe("User Profile Endpoints", () => {
         .send(updateData)
         .expect(200);
 
-      expect(response.body).toHaveProperty("name", "Updated Name");
-      expect(response.body).toHaveProperty(
+      expect(response.body.user).toHaveProperty("name", "Updated Name");
+      expect(response.body.user).toHaveProperty(
         "avatar",
         "https://example.com/avatar.jpg",
       );

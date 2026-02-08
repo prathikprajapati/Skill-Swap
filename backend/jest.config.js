@@ -12,9 +12,7 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(@prisma)/)',
   ],
-  moduleNameMapper: {
-    '^@prisma/client$': '<rootDir>/src/generated/prisma',
-  },
+
 
 
 

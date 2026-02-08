@@ -1,56 +1,86 @@
-import type { Response } from 'express';
-import { PrismaClient } from '../generated/prisma';
-import type { AuthRequest } from '../types/auth';
+import type { Response } from "express";
+import { PrismaClient } from "@prisma/client";
+
+import type { AuthRequest } from "../types/auth";
 
 const prisma = new PrismaClient();
 
-export const getRecommendedMatches = async (req: AuthRequest, res: Response) => {
+export const getRecommendedMatches = async (
+  req: AuthRequest,
+  res: Response,
+) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     // Get current user's skills
     const userSkills = await prisma.userSkill.findMany({
       where: { user_id: userId },
-      include: { skill: true }
+      include: { skill: true },
     });
 
     const offeredSkillIds = userSkills
-      .filter(us => us.skill_type === 'offer')
-      .map(us => us.skill_id);
+      .filter((us) => us.skill_type === "offer")
+      .map((us) => us.skill_id);
 
     const wantedSkillIds = userSkills
-      .filter(us => us.skill_type === 'want')
-      .map(us => us.skill_id);
+      .filter((us) => us.skill_type === "want")
+      .map((us) => us.skill_id);
+
+    // Get existing matches to exclude
+    const existingMatches = await prisma.match.findMany({
+      where: {
+        OR: [{ user1_id: userId }, { user2_id: userId }],
+      },
+    });
+    const matchedUserIds = existingMatches.map((m) =>
+      m.user1_id === userId ? m.user2_id : m.user1_id,
+    );
+
+    // Get pending requests to exclude
+    const pendingRequests = await prisma.matchRequest.findMany({
+      where: {
+        OR: [
+          { sender_id: userId, status: "pending" },
+          { receiver_id: userId, status: "pending" },
+        ],
+      },
+    });
+    const requestedUserIds = pendingRequests.map((r) =>
+      r.sender_id === userId ? r.receiver_id : r.sender_id,
+    );
+
+    // Combine excluded user IDs
+    const excludedUserIds = [...matchedUserIds, ...requestedUserIds, userId];
 
     // Find users who have skills we want and want skills we have
     const potentialMatches = await prisma.user.findMany({
       where: {
         AND: [
-          { id: { not: userId } },
+          { id: { notIn: excludedUserIds } },
           {
             OR: [
               // Users who offer skills we want
               {
                 offered_skills: {
                   some: {
-                    skill_id: { in: wantedSkillIds }
-                  }
-                }
+                    skill_id: { in: wantedSkillIds },
+                  },
+                },
               },
               // Users who want skills we offer
               {
                 wanted_skills: {
                   some: {
-                    skill_id: { in: offeredSkillIds }
-                  }
-                }
-              }
-            ]
-          }
-        ]
+                    skill_id: { in: offeredSkillIds },
+                  },
+                },
+              },
+            ],
+          },
+        ],
       },
       select: {
         id: true,
@@ -58,54 +88,74 @@ export const getRecommendedMatches = async (req: AuthRequest, res: Response) => 
         avatar: true,
         profile_completion: true,
         offered_skills: {
-          include: { skill: true }
+          include: { skill: true },
         },
         wanted_skills: {
-          include: { skill: true }
-        }
+          include: { skill: true },
+        },
       },
-      take: 20
+      take: 20,
     });
 
     // Calculate match scores
-    const matchesWithScores = potentialMatches.map(user => {
-      const userOfferedSkillIds = user.offered_skills.map(us => us.skill_id);
-      const userWantedSkillIds = user.wanted_skills.map(us => us.skill_id);
+    const matchesWithScores = potentialMatches.map((user) => {
+      const userOfferedSkillIds = user.offered_skills.map((us) => us.skill_id);
+      const userWantedSkillIds = user.wanted_skills.map((us) => us.skill_id);
 
-      // Mutual matches
-      const mutualOffers = userOfferedSkillIds.filter(id => wantedSkillIds.includes(id)).length;
-      const mutualWants = userWantedSkillIds.filter(id => offeredSkillIds.includes(id)).length;
-      const mutualMatches = mutualOffers + mutualWants;
+      // Get matched offers (user offers what we want)
+      const matchedOffers = user.offered_skills
+        .filter((us) => wantedSkillIds.includes(us.skill_id))
+        .map((us) => us.skill.name);
+
+      // Get matched wants (user wants what we offer)
+      const matchedWants = user.wanted_skills
+        .filter((us) => offeredSkillIds.includes(us.skill_id))
+        .map((us) => us.skill.name);
+
+      // Mutual matches count
+      const mutualMatches = matchedOffers.length + matchedWants.length;
 
       // Skill overlap
       const allUserSkills = [...userOfferedSkillIds, ...userWantedSkillIds];
       const allCurrentSkills = [...offeredSkillIds, ...wantedSkillIds];
-      const overlap = allUserSkills.filter(id => allCurrentSkills.includes(id)).length;
+      const overlap = allUserSkills.filter((id) =>
+        allCurrentSkills.includes(id),
+      ).length;
       const maxSkills = Math.max(allUserSkills.length, allCurrentSkills.length);
       const skillOverlap = maxSkills > 0 ? overlap / maxSkills : 0;
 
       // Profile completion
       const profileCompletion = user.profile_completion / 100;
 
-      // Calculate score
-      const score = (mutualMatches * 0.5) + (skillOverlap * 0.3) + (profileCompletion * 0.2);
+      // Calculate score (0-100 integer)
+      const rawScore =
+        mutualMatches * 0.5 + skillOverlap * 0.3 + profileCompletion * 0.2;
+      const score = Math.round(rawScore * 100);
 
       return {
-        ...user,
-        match_score: Math.round(score * 100) / 100,
-        mutual_matches: mutualMatches,
-        skill_overlap: Math.round(skillOverlap * 100)
+        userId: user.id,
+        score,
+        matchedOffers,
+        matchedWants,
+        name: user.name,
+        avatar: user.avatar,
+        profile_completion: user.profile_completion,
       };
     });
 
-    // Sort by score and return top matches
+    // Sort by score (descending), then by profile completion
     const sortedMatches = matchesWithScores
-      .sort((a, b) => b.match_score - a.match_score)
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return b.profile_completion - a.profile_completion;
+      })
       .slice(0, 10);
 
     res.json(sortedMatches);
   } catch (error) {
-    console.error('Get recommended matches error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Get recommended matches error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
