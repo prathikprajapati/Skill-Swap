@@ -4,7 +4,8 @@
 
 - **Runtime:** Node.js
 - **Framework:** Express.js
-- **Database:** PostgreSQL
+- **Database:** MySQL (migrating to PostgreSQL for production scaling)
+
 - **ORM:** Prisma
 - **Authentication:** JWT (short-lived access tokens, no refresh tokens for MVP)
 - **Validation:** Joi or express-validator
@@ -89,7 +90,8 @@
 
 ### 1. Project Setup & Auth
 - Initialize Node.js + Express project
-- Set up Prisma with PostgreSQL
+- Set up Prisma with MySQL
+
 - Implement user registration (POST /auth/signup)
 - Implement user login (POST /auth/login)
 - Create JWT middleware for protected routes

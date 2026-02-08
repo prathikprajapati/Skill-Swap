@@ -18,7 +18,7 @@ A full-stack platform connecting people for skill exchange through intelligent m
 
 ## Tech Stack
 - **Frontend**: React 18, TypeScript, Tailwind CSS, Vite
-- **Backend**: Node.js, Express.js, PostgreSQL, Prisma ORM
+- **Backend**: Node.js, Express.js, MySQL, Prisma ORM (migrating to PostgreSQL for production scaling)
 - **Authentication**: JWT with bcrypt password hashing
 - **State Management**: TanStack Query for server state
 - **UI Components**: Custom component library with shadcn/ui
@@ -56,7 +56,7 @@ RESTful endpoints with consistent error handling:
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL 15+
+- MySQL 8+
 - npm or yarn
 
 ### Installation
@@ -122,7 +122,7 @@ RESTful endpoints with consistent error handling:
 - **Market**: Growing edtech space with focus on peer learning
 
 ### Technical Highlights
-- **Scalable Architecture**: PostgreSQL with optimized queries
+- **Scalable Architecture**: MySQL with optimized queries (PostgreSQL for production scaling)
 - **Modern Frontend**: React 18 with TypeScript for reliability
 - **Security First**: Proper authentication and data validation
 - **Performance**: Fast loading with code splitting and caching

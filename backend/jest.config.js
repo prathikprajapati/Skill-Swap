@@ -37,7 +37,8 @@ module.exports = {
     env: {
       ...process.env,
       NODE_ENV: 'test',
-      DATABASE_URL: process.env.DATABASE_URL_TEST || 'postgresql://johndoe:randompassword@localhost:5432/mydb_test?schema=public',
+      DATABASE_URL: process.env.DATABASE_URL_TEST || 'mysql://johndoe:randompassword@localhost:3306/mydb_test',
+
       JWT_SECRET: 'test-jwt-secret-key-for-testing-only'
     }
   }
