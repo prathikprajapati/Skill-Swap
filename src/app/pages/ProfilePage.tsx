@@ -438,7 +438,8 @@ export function ProfilePage() {
                   <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: achievement.color }} />
                 )}
               </div>
-            );
+            );git remote add origin https://github.com/prathikprajapati/Skill-Swap.git
+
           })}
         </div>
       </div>
