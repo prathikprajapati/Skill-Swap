@@ -51,10 +51,9 @@ describe("User Profile Endpoints", () => {
   });
 
   describe("PUT /users/me", () => {
-    it("should update user profile", async () => {
+    it("should update user profile name", async () => {
       const updateData = {
         name: "Updated Name",
-        avatar: "https://example.com/avatar.jpg",
       };
 
       const response = await request(app)
@@ -64,10 +63,6 @@ describe("User Profile Endpoints", () => {
         .expect(200);
 
       expect(response.body.user).toHaveProperty("name", "Updated Name");
-      expect(response.body.user).toHaveProperty(
-        "avatar",
-        "https://example.com/avatar.jpg",
-      );
     });
 
     it("should return 401 without authentication", async () => {

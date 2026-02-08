@@ -96,26 +96,32 @@ describe("Matching Algorithm", () => {
           {
             OR: [
               {
-                offered_skills: {
-                  some: { skill_id: { in: wantedSkillIds } },
+                user_skills: {
+                  some: {
+                    skill_id: { in: wantedSkillIds },
+                    skill_type: "offer",
+                  },
                 },
               },
               {
-                wanted_skills: {
-                  some: { skill_id: { in: offeredSkillIds } },
+                user_skills: {
+                  some: {
+                    skill_id: { in: offeredSkillIds },
+                    skill_type: "want",
+                  },
                 },
               },
             ],
           },
         ],
       },
-      select: {
-        id: true,
-        name: true,
-        avatar: true,
-        profile_completion: true,
-        offered_skills: { include: { skill: true } },
-        wanted_skills: { include: { skill: true } },
+      include: {
+        user_skills: {
+          where: {
+            OR: [{ skill_type: "offer" }, { skill_type: "want" }],
+          },
+          include: { skill: true },
+        },
       },
     });
 
@@ -124,15 +130,21 @@ describe("Matching Algorithm", () => {
 
     // Calculate match score
     const user = potentialMatches[0];
-    const userOfferedSkillIds = user.offered_skills.map((us) => us.skill_id);
-    const userWantedSkillIds = user.wanted_skills.map((us) => us.skill_id);
+    const userOfferedSkills = user.user_skills.filter(
+      (us) => us.skill_type === "offer",
+    );
+    const userWantedSkills = user.user_skills.filter(
+      (us) => us.skill_type === "want",
+    );
+    const userOfferedSkillIds = userOfferedSkills.map((us) => us.skill_id);
+    const userWantedSkillIds = userWantedSkills.map((us) => us.skill_id);
 
     // Get matched offers and wants (new format)
-    const matchedOffers = user.offered_skills
+    const matchedOffers = userOfferedSkills
       .filter((us) => wantedSkillIds.includes(us.skill_id))
       .map((us) => us.skill.name);
 
-    const matchedWants = user.wanted_skills
+    const matchedWants = userWantedSkills
       .filter((us) => offeredSkillIds.includes(us.skill_id))
       .map((us) => us.skill.name);
 
@@ -212,20 +224,36 @@ describe("Matching Algorithm", () => {
       .filter((us) => us.skill_type === "offer")
       .map((us) => us.skill_id);
 
+    // Get existing matches to exclude (like the actual controller does)
+    const existingMatches = await prisma.match.findMany({
+      where: {
+        OR: [{ user1_id: user1.id }, { user2_id: user1.id }],
+      },
+    });
+    const matchedUserIds = existingMatches.map((m) =>
+      m.user1_id === user1.id ? m.user2_id : m.user1_id,
+    );
+
     const potentialMatches = await prisma.user.findMany({
       where: {
         AND: [
-          { id: { not: user1.id } },
+          { id: { notIn: [...matchedUserIds, user1.id] } },
           {
             OR: [
               {
-                offered_skills: {
-                  some: { skill_id: { in: [] } }, // No wanted skills for user1
+                user_skills: {
+                  some: {
+                    skill_id: { in: [] }, // No wanted skills for user1
+                    skill_type: "offer",
+                  },
                 },
               },
               {
-                wanted_skills: {
-                  some: { skill_id: { in: offeredSkillIds } },
+                user_skills: {
+                  some: {
+                    skill_id: { in: offeredSkillIds },
+                    skill_type: "want",
+                  },
                 },
               },
             ],

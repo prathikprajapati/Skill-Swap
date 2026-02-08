@@ -1,3 +1,4 @@
+import type { Response } from "express";
 import { validationResult } from "express-validator";
 import { PrismaClient } from "@prisma/client";
 import type { AuthRequest } from "../types/auth";
@@ -13,16 +14,18 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
 
     const matchId = req.params.id;
 
-    // Check if user is part of this match
-    const match = await prisma.match.findFirst({
-      where: {
-        id: matchId,
-        OR: [{ user1_id: userId }, { user2_id: userId }],
-      },
+    // Check if match exists
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
     });
 
     if (!match) {
       return res.status(404).json({ error: "Match not found" });
+    }
+
+    // Check if user is part of this match
+    if (match.user1_id !== userId && match.user2_id !== userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const messages = await prisma.message.findMany({

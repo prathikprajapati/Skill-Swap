@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import skillsRoutes from "./routes/skills";
-import matchesRoutes from "./routes/matches";
+import matchesRoutes, { messagesRouter } from "./routes/matches";
+
 import requestsRoutes from "./routes/requests";
 import messagesRoutes from "./routes/messages";
 
@@ -25,18 +26,18 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Routes
+// Health check endpoint - must be before authenticated routes
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Routes - Order matters! More specific routes first
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/skills", skillsRoutes);
 app.use("/matches", matchesRoutes);
 app.use("/requests", requestsRoutes);
-app.use("/messages", messagesRoutes);
-
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+app.use("/messages", messagesRouter);
 
 // Error handling middleware
 app.use(

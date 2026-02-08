@@ -55,7 +55,7 @@ export const getRecommendedMatches = async (
     // Combine excluded user IDs
     const excludedUserIds = [...matchedUserIds, ...requestedUserIds, userId];
 
-    // Find users who have skills we want and want skills we have
+    // Find users who have skills we want and want skills we offer
     const potentialMatches = await prisma.user.findMany({
       where: {
         AND: [
@@ -64,17 +64,19 @@ export const getRecommendedMatches = async (
             OR: [
               // Users who offer skills we want
               {
-                offered_skills: {
+                user_skills: {
                   some: {
                     skill_id: { in: wantedSkillIds },
+                    skill_type: "offer",
                   },
                 },
               },
               // Users who want skills we offer
               {
-                wanted_skills: {
+                user_skills: {
                   some: {
                     skill_id: { in: offeredSkillIds },
+                    skill_type: "want",
                   },
                 },
               },
@@ -82,15 +84,11 @@ export const getRecommendedMatches = async (
           },
         ],
       },
-      select: {
-        id: true,
-        name: true,
-        avatar: true,
-        profile_completion: true,
-        offered_skills: {
-          include: { skill: true },
-        },
-        wanted_skills: {
+      include: {
+        user_skills: {
+          where: {
+            OR: [{ skill_type: "offer" }, { skill_type: "want" }],
+          },
           include: { skill: true },
         },
       },
@@ -99,16 +97,22 @@ export const getRecommendedMatches = async (
 
     // Calculate match scores
     const matchesWithScores = potentialMatches.map((user) => {
-      const userOfferedSkillIds = user.offered_skills.map((us) => us.skill_id);
-      const userWantedSkillIds = user.wanted_skills.map((us) => us.skill_id);
+      const userOfferedSkills = user.user_skills.filter(
+        (us) => us.skill_type === "offer",
+      );
+      const userWantedSkills = user.user_skills.filter(
+        (us) => us.skill_type === "want",
+      );
+      const userOfferedSkillIds = userOfferedSkills.map((us) => us.skill_id);
+      const userWantedSkillIds = userWantedSkills.map((us) => us.skill_id);
 
       // Get matched offers (user offers what we want)
-      const matchedOffers = user.offered_skills
+      const matchedOffers = userOfferedSkills
         .filter((us) => wantedSkillIds.includes(us.skill_id))
         .map((us) => us.skill.name);
 
       // Get matched wants (user wants what we offer)
-      const matchedWants = user.wanted_skills
+      const matchedWants = userWantedSkills
         .filter((us) => offeredSkillIds.includes(us.skill_id))
         .map((us) => us.skill.name);
 
