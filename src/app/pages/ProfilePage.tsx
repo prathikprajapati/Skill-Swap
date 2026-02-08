@@ -33,12 +33,15 @@ const achievements = [
 
 // Theme cards data with icons
 const allThemes: { id: ThemeType; icon: typeof Sun; bg: string; isDark: boolean }[] = [
-  { id: "sunny-day", icon: Sun, bg: "from-amber-100 to-yellow-50", isDark: false },
-  { id: "ocean-breeze", icon: Cloud, bg: "from-blue-100 to-cyan-50", isDark: false },
-  { id: "spring-garden", icon: Palette, bg: "from-purple-100 to-pink-50", isDark: false },
-  { id: "midnight", icon: Moon, bg: "from-indigo-900 to-purple-900", isDark: true },
-  { id: "starry-night", icon: Sparkle, bg: "from-violet-900 to-fuchsia-900", isDark: true },
-  { id: "cozy-dark", icon: Coffee, bg: "from-stone-800 to-amber-900", isDark: true },
+  { id: "sapphire-dreams", icon: Sparkle, bg: "from-blue-900 to-indigo-950", isDark: true },
+  { id: "deep-space", icon: Moon, bg: "from-slate-900 to-rose-950", isDark: true },
+  { id: "lavender-mist", icon: Palette, bg: "from-indigo-200 to-purple-200", isDark: false },
+  { id: "graphite-mint", icon: Cloud, bg: "from-teal-800 to-emerald-900", isDark: true },
+  { id: "forest-mist", icon: Sun, bg: "from-emerald-900 to-teal-800", isDark: true },
+  { id: "royal-gold", icon: Award, bg: "from-amber-900 to-yellow-950", isDark: true },
+  { id: "cosmic-purple", icon: Sparkles, bg: "from-purple-950 to-fuchsia-950", isDark: true },
+  { id: "warm-burgundy", icon: Heart, bg: "from-rose-100 to-amber-100", isDark: false },
+  { id: "olive-garden", icon: Coffee, bg: "from-lime-800 to-green-900", isDark: true },
 ];
 
 export function ProfilePage() {
@@ -443,12 +446,12 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* Theme Cards - All in Single Line with improved spacing */}
+      {/* Theme Cards - Grid Layout */}
       <div className="mb-2">
-        <h2 className="text-xl font-semibold mb-6" style={{ color: '#E0E0E0', fontWeight: 500 }}>
+        <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
           Choose Your Vibe
         </h2>
-        <div className="flex gap-6 overflow-x-auto justify-center p-4 -mx-3 px-6">
+        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4 p-4">
           {allThemes.map((theme) => {
             const Icon = theme.icon;
             const themeData = themes[theme.id];
@@ -458,31 +461,33 @@ export function ProfilePage() {
               <button
                 key={theme.id}
                 onClick={() => setTheme(theme.id)}
-                className={`flex-shrink-0 p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group text-left w-[150px] bg-gradient-to-br ${theme.bg} ${
+                className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group text-left bg-gradient-to-br ${theme.bg} ${
                   isActive ? 'ring-2 ring-offset-2 ring-indigo-500 scale-105 shadow-lg' : 'hover:shadow-md'
                 }`}
-                style={{ 
-                  borderColor: isActive ? themeData.colors["--primary"] : 'transparent',
-                  borderRadius: '8px',
-                }}
+                  style={{ 
+                    borderColor: isActive ? themeData.colors["--primary"] : 'transparent',
+                    borderRadius: '12px',
+                    minHeight: '100px',
+                  }}
+
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: themeData.colors["--primary"] + '20' }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-sm"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
                   >
-                    <Icon className="w-4 h-5" style={{ color: themeData.colors["--primary"] }} />
+                    <Icon className="w-5 h-5" style={{ color: theme.isDark ? '#FFFFFF' : '#1a1a2e' }} />
                   </div>
                   {isActive && (
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: themeData.colors["--primary"] }}>
-                      <Check className="w-3 h-3 text-white" />
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white/90 shadow-sm">
+                      <Check className="w-4 h-4 text-indigo-600" />
                     </div>
                   )}
                 </div>
-                <h3 className={`font-semibold text-sm mb-1 ${theme.isDark ? 'text-white' : 'text-gray-800'}`} style={{ fontWeight: 500 }}>
+                <h3 className={`font-semibold text-sm mb-1 ${theme.isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontWeight: 600 }}>
                   {themeData.name}
                 </h3>
-                <p className={`text-xs leading-relaxed ${theme.isDark ? 'text-white/70' : 'text-gray-600'}`} style={{ fontSize: '14px' }}>
+                <p className={`text-xs leading-relaxed ${theme.isDark ? 'text-white/80' : 'text-gray-700'}`} style={{ fontSize: '12px', opacity: 0.9 }}>
                   {themeData.description}
                 </p>
               </button>
@@ -490,6 +495,7 @@ export function ProfilePage() {
           })}
         </div>
       </div>
+
 
       {/* Success Feedback */}
       {showSuccessFeedback && (

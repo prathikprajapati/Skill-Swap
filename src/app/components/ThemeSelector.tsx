@@ -60,64 +60,76 @@ export function ThemeSelector() {
 
                 {/* Color Preview */}
                 <div className="flex gap-2 mt-3">
-                  {themeKey === "warm-light" && (
+                  {themeKey === "sapphire-dreams" && (
                     <>
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#F97316" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#FB923C" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#FEF3C7" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#FFF7ED" }}
-                      />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#3372ca" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#4c2aa3" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#4a1339" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#07111a" }} />
                     </>
                   )}
-                  {themeKey === "cool-light" && (
+                  {themeKey === "deep-space" && (
                     <>
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#4F6D7A" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#6366F1" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#6FB1A0" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#F8FAFC" }}
-                      />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#d66853" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#7d4e57" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#364156" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#11151c" }} />
                     </>
                   )}
-                  {themeKey === "dark" && (
+                  {themeKey === "lavender-mist" && (
                     <>
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#38BDF8" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#A78BFA" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#1E293B" }}
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full"
-                        style={{ backgroundColor: "#0F172A" }}
-                      />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#7d1d3f" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#3943b7" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#9b9ece" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#acadbc" }} />
+                    </>
+                  )}
+                  {themeKey === "graphite-mint" && (
+                    <>
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#6ec19e" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#438e8b" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#636363" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#2d302f" }} />
+                    </>
+                  )}
+                  {themeKey === "forest-mist" && (
+                    <>
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#C5D5D1" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#8FA8A3" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#2D5A52" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#1F3A34" }} />
+                    </>
+                  )}
+                  {themeKey === "royal-gold" && (
+                    <>
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#D4A964" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#8B6914" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#5A1A3D" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#3E0F2F" }} />
+                    </>
+                  )}
+                  {themeKey === "cosmic-purple" && (
+                    <>
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#AC58E9" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#7A3DBF" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#2D1B4E" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#000000" }} />
+                    </>
+                  )}
+                  {themeKey === "warm-burgundy" && (
+                    <>
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#90353D" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#C4A77D" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#E8DCC8" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#F4EDE3" }} />
+                    </>
+                  )}
+                  {themeKey === "olive-garden" && (
+                    <>
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#D7D8B6" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#8B8C6A" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#3A3A24" }} />
+                      <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#535434" }} />
                     </>
                   )}
                 </div>
