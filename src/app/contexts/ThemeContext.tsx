@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type ThemeType = "sapphire-dreams" | "deep-space" | "lavender-mist" | "graphite-mint" | "forest-mist" | "royal-gold" | "cosmic-purple" | "warm-burgundy" | "olive-garden";
+export type ThemeType = "sapphire-dreams" | /* "deep-space" | "lavender-mist" | "graphite-mint" | "forest-mist" | */ "royal-gold" /* | "cosmic-purple" | "warm-burgundy" | "olive-garden" */;
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -25,13 +25,15 @@ export const themes = {
       "--primary-dark": "#4c2aa3",
       "--primary-light": "#1a3a5c",
       "--primary-foreground": "#FFFFFF",
-      "--accent": "#4c2aa3",
+      "--accent": "#4c2aaf",
       "--accent-light": "#2d1b5e",
       "--accent-indigo": "#3372ca",
       "--accent-indigo-dark": "#4c2aa3",
       "--text-primary": "#FFFFFF",
       "--text-secondary": "#E8E8E8",
+      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
       "--text-disabled": "#A0A0A0",
+      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -40,6 +42,7 @@ export const themes = {
       "--muted-foreground": "#B0B0B0",
     },
   },
+  /*
   "deep-space": {
     name: "Deep Space",
     description: "Dark cosmic palette — mysterious and expansive",
@@ -61,7 +64,9 @@ export const themes = {
       "--accent-indigo-dark": "#7d4e57",
       "--text-primary": "#FFFFFF",
       "--text-secondary": "#E0E0E0",
+      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
       "--text-disabled": "#A0A0A0",
+      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -91,7 +96,9 @@ export const themes = {
       "--accent-indigo-dark": "#512500",
       "--text-primary": "#1a1a2e",
       "--text-secondary": "#3a3a4e",
+      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
       "--text-disabled": "#7a7a8e",
+      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -121,7 +128,9 @@ export const themes = {
       "--accent-indigo-dark": "#438e8b",
       "--text-primary": "#1a1d1f",
       "--text-secondary": "#3a3d3f",
+      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
       "--text-disabled": "#6a6d6f",
+      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -151,7 +160,9 @@ export const themes = {
       "--accent-indigo-dark": "#1F3A34",
       "--text-primary": "#1F3A34",
       "--text-secondary": "#3F5A54",
+      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
       "--text-disabled": "#6F8A84",
+      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -160,6 +171,7 @@ export const themes = {
       "--muted-foreground": "#5F7A74",
     },
   },
+  */
   "royal-gold": {
     name: "Royal Gold",
     description: "Luxurious gold with deep burgundy — rich and opulent",
@@ -181,7 +193,9 @@ export const themes = {
       "--accent-indigo-dark": "#8B6914",
       "--text-primary": "#FFFFFF",
       "--text-secondary": "#F0E0C0",
+      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
       "--text-disabled": "#A89070",
+      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -190,6 +204,7 @@ export const themes = {
       "--muted-foreground": "#D4A964",
     },
   },
+  /*
   "cosmic-purple": {
     name: "Cosmic Purple",
     description: "Electric purple on black — futuristic and bold",
@@ -211,7 +226,9 @@ export const themes = {
       "--accent-indigo-dark": "#7A3DBF",
       "--text-primary": "#FFFFFF",
       "--text-secondary": "#E0D0F0",
+      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
       "--text-disabled": "#A080C0",
+      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -241,7 +258,9 @@ export const themes = {
       "--accent-indigo-dark": "#5C2428",
       "--text-primary": "#90353D",
       "--text-secondary": "#702530",
+      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
       "--text-disabled": "#A68B7A",
+      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -271,7 +290,9 @@ export const themes = {
       "--accent-indigo-dark": "#3A3A24",
       "--text-primary": "#3A3A24",
       "--text-secondary": "#5A5A44",
+      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
       "--text-disabled": "#8B8C6A",
+      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
       "--success": "#22C55E",
       "--warning": "#F59E0B",
       "--destructive": "#EF4444",
@@ -280,6 +301,7 @@ export const themes = {
       "--muted-foreground": "#6A6A54",
     },
   },
+  */
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

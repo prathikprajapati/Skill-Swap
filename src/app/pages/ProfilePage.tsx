@@ -34,14 +34,14 @@ const achievements = [
 // Theme cards data with icons
 const allThemes: { id: ThemeType; icon: typeof Sun; bg: string; isDark: boolean }[] = [
   { id: "sapphire-dreams", icon: Sparkle, bg: "from-blue-900 to-indigo-950", isDark: true },
-  { id: "deep-space", icon: Moon, bg: "from-slate-900 to-rose-950", isDark: true },
+  /* { id: "deep-space", icon: Moon, bg: "from-slate-900 to-rose-950", isDark: true },
   { id: "lavender-mist", icon: Palette, bg: "from-indigo-200 to-purple-200", isDark: false },
   { id: "graphite-mint", icon: Cloud, bg: "from-teal-800 to-emerald-900", isDark: true },
-  { id: "forest-mist", icon: Sun, bg: "from-emerald-900 to-teal-800", isDark: true },
+  { id: "forest-mist", icon: Sun, bg: "from-emerald-900 to-teal-800", isDark: true }, */
   { id: "royal-gold", icon: Award, bg: "from-amber-900 to-yellow-950", isDark: true },
-  { id: "cosmic-purple", icon: Sparkles, bg: "from-purple-950 to-fuchsia-950", isDark: true },
+  /* { id: "cosmic-purple", icon: Sparkles, bg: "from-purple-950 to-fuchsia-950", isDark: true },
   { id: "warm-burgundy", icon: Heart, bg: "from-rose-100 to-amber-100", isDark: false },
-  { id: "olive-garden", icon: Coffee, bg: "from-lime-800 to-green-900", isDark: true },
+  { id: "olive-garden", icon: Coffee, bg: "from-lime-800 to-green-900", isDark: true }, */
 ];
 
 export function ProfilePage() {
@@ -295,8 +295,9 @@ export function ProfilePage() {
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   activeTab === "teaching" 
                     ? "bg-indigo-500 text-white shadow-md" 
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--card-item-hover-bg)]"
                 }`}
+                style={activeTab !== "teaching" ? { backgroundColor: 'var(--secondary)' } : {}}
               >
                 <Award className="w-4 h-4" />
                 Teach ({offeredSkills.length})
@@ -306,8 +307,9 @@ export function ProfilePage() {
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   activeTab === "learning" 
                     ? "bg-purple-500 text-white shadow-md" 
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--card-item-hover-bg)]"
                 }`}
+                style={activeTab !== "learning" ? { backgroundColor: 'var(--secondary)' } : {}}
               >
                 <Target className="w-4 h-4" />
                 Learn ({wantedSkills.length})
@@ -331,7 +333,13 @@ export function ProfilePage() {
                     </div>
                   ))}
                   {(activeTab === "teaching" ? offeredSkills : wantedSkills).length > 6 && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full"
+                      style={{ 
+                        backgroundColor: 'var(--secondary)', 
+                        color: 'var(--text-tertiary)' 
+                      }}
+                    >
                       +{(activeTab === "teaching" ? offeredSkills : wantedSkills).length - 6} more
                     </span>
                   )}
@@ -348,7 +356,7 @@ export function ProfilePage() {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-sm text-gray-500 mb-2">
+                  <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>
                     No {activeTab === "teaching" ? "skills" : "goals"} yet
                   </p>
                   <button 
@@ -385,15 +393,40 @@ export function ProfilePage() {
                 { icon: Flame, text: "7-day streak!", time: "3d", color: "#f97316" },
               ].map((activity, i) => {
                 const Icon = activity.icon;
+                // Safely generate rgba with 8% opacity (better contrast than 15%)
+                const iconBg = activity.color.includes('#') && activity.color.length === 7
+                  ? `rgba(${parseInt(activity.color.slice(1, 3), 16)}, ${parseInt(activity.color.slice(3, 5), 16)}, ${parseInt(activity.color.slice(5, 7), 16)}, 0.08)`
+                  : `rgba(128, 128, 128, 0.08)`;
+                
                 return (
-                  <div key={i} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-all">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: activity.color + '15' }}>
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-2 p-2 rounded-lg transition-colors cursor-pointer"
+                    style={{ 
+                      backgroundColor: 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--card-item-hover-bg)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
+                      style={{ backgroundColor: iconBg }}
+                    >
                       <Icon className="w-4 h-4" style={{ color: activity.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{activity.text}</p>
                     </div>
-                    <span className="text-xs text-gray-400">{activity.time}</span>
+                    <span 
+                      className="text-xs"
+                      style={{ color: 'var(--text-tertiary)' }}
+                    >
+                      {activity.time}
+                    </span>
                   </div>
                 );
               })}
@@ -512,15 +545,16 @@ export function ProfilePage() {
           onClick={() => setShowAddSkillModal(false)}
         >
           <div 
-            className="w-full max-w-[480px] p-6 rounded-2xl shadow-2xl animate-in zoom-in-95 fade-in duration-200 bg-white"
+            className="w-full max-w-[480px] p-6 rounded-2xl shadow-2xl animate-in zoom-in-95 fade-in duration-200"
             onClick={(e) => e.stopPropagation()}
+            style={{ backgroundColor: 'var(--card)' }}
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">
+                <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                   Add New {newSkillType === "offer" ? "Skill" : "Goal"}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
                   {newSkillType === "offer" 
                     ? "What can you teach others?" 
                     : "What do you want to learn?"}
@@ -528,15 +562,22 @@ export function ProfilePage() {
               </div>
               <button
                 onClick={() => setShowAddSkillModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--card-item-hover-bg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                   Skill Name
                 </label>
                 <input
@@ -544,13 +585,18 @@ export function ProfilePage() {
                   placeholder={newSkillType === "offer" ? "e.g., React, Guitar, Spanish" : "e.g., Machine Learning, Cooking"}
                   value={newSkillName}
                   onChange={(e) => setNewSkillName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                  className="w-full px-4 py-3 rounded-xl border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                  style={{ 
+                    backgroundColor: 'var(--input-background, #FFFFFF)',
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)'
+                  }}
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                   Proficiency Level
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -561,10 +607,20 @@ export function ProfilePage() {
                       className={`py-3 px-4 rounded-xl border-2 font-medium capitalize transition-all ${
                         newSkillLevel === level
                           ? newSkillType === "offer"
-                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                            : "border-purple-500 bg-purple-50 text-purple-700"
-                          : "border-gray-200 hover:border-gray-300 text-gray-600"
+                            ? "border-indigo-500 text-indigo-700"
+                            : "border-purple-500 text-purple-700"
+                          : "hover:border-[var(--primary)]"
                       }`}
+                      style={newSkillLevel === level 
+                        ? { 
+                            backgroundColor: newSkillType === "offer" ? 'rgba(99, 102, 241, 0.1)' : 'rgba(168, 85, 247, 0.1)',
+                            color: newSkillType === "offer" ? '#4f46e5' : '#9333ea'
+                          }
+                        : { 
+                            borderColor: 'var(--border)',
+                            color: 'var(--text-secondary)'
+                          }
+                      }
                     >
                       {level}
                     </button>
@@ -587,7 +643,17 @@ export function ProfilePage() {
                 </button>
                 <button 
                   onClick={() => setShowAddSkillModal(false)}
-                  className="flex-1 py-3 px-4 rounded-xl font-medium border-2 border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
+                  className="flex-1 py-3 px-4 rounded-xl font-medium border-2 transition-all"
+                  style={{ 
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-secondary)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--card-item-hover-bg)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   Cancel
                 </button>

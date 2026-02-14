@@ -20,18 +20,18 @@ export function LandingPage() {
       <div className="absolute inset-0">
         <LightRays
           raysOrigin="top-center"
-          raysColor="#a5b4fc"
-          raysSpeed={0.8}
-          lightSpread={0.6}
-          rayLength={2.5}
-          followMouse={true}
+          raysColor="#F2EAB2"
+          raysSpeed={0.2}
+          lightSpread={1}
+          rayLength={5}
+          followMouse={false}
           mouseInfluence={0.15}
-          noiseAmount={0.1}
-          distortion={0.2}
-          className="opacity-80"
-          pulsating={true}
-          fadeDistance={1.2}
-          saturation={1.4}
+          noiseAmount={0}
+          distortion={0.111}
+          className="opacity-90"
+          pulsating={false}
+          fadeDistance={10}
+          saturation={0.6}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-slate-950/40 to-slate-950/30"></div>
       </div>
@@ -100,30 +100,6 @@ export function LandingPage() {
               disableAnimations={false}
               cards={featureCards}
             />
-          </div>
-        </div>
-      </div>
-
-      {/* Learn More Section */}
-      <div
-        id="learn-more"
-        className="relative z-10 bg-white text-slate-900 py-20 px-6"
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-8">Get Started Today</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-6">
-              <h3 className="text-2xl font-semibold mb-4">1. Create Profile</h3>
-              <p>Add your skills and what you want to learn.</p>
-            </div>
-            <div className="p-6">
-              <h3 className="text-2xl font-semibold mb-4">2. Find Matches</h3>
-              <p>Get matched with people who complement your skills.</p>
-            </div>
-            <div className="p-6">
-              <h3 className="text-2xl font-semibold mb-4">3. Start Learning</h3>
-              <p>Connect and exchange knowledge through skill swaps.</p>
-            </div>
           </div>
         </div>
       </div>

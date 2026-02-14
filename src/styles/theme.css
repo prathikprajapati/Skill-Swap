@@ -2,59 +2,63 @@
 
 :root {
   --font-size: 16px;
-  
+
+  /* Theme-aware hover backgrounds for card items */
+  --card-item-hover-bg: rgba(0, 0, 0, 0.03);
+  --text-tertiary: rgba(0, 0, 0, 0.5);
+
   /* Skill Swap Platform Custom Colors - V2 Enhanced */
   --primary: #4F6D7A;
   --primary-dark: #3A505B;
   --primary-light: #E8F1F4;
-  
+
   --accent: #6FB1A0;
   --accent-light: #E3F3EF;
   --accent-indigo: #6366F1;
   --accent-indigo-dark: #4F46E5;
-  
+
   --success: #22C55E;
   --warning: #F59E0B;
-  
+
   --background: #F9FAFB;
   --foreground: #111827;
-  
+
   --section-bg: #F3F7F9;
-  
+
   --card: #FFFFFF;
   --card-foreground: #111827;
-  
+
   --border: #E5E7EB;
-  
+
   --text-primary: #111827;
   --text-secondary: #6B7280;
   --text-disabled: #9CA3AF;
-  
+
   --popover: #FFFFFF;
   --popover-foreground: #111827;
-  
+
   --primary-foreground: #FFFFFF;
   --secondary: #F3F4F6;
   --secondary-foreground: #111827;
-  
+
   --muted: #F3F4F6;
   --muted-foreground: #6B7280;
-  
+
   --accent-foreground: #111827;
-  
+
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  
+
   --input: transparent;
   --input-background: #FFFFFF;
-  
+
   --switch-background: #cbced4;
   --font-weight-medium: 600;
   --font-weight-normal: 400;
   --ring: #4F6D7A;
-  
+
   --radius: 0.75rem;
-  
+
   --sidebar: #FFFFFF;
   --sidebar-foreground: #111827;
   --sidebar-primary: #4F6D7A;
@@ -66,6 +70,10 @@
 }
 
 .dark {
+  /* Theme-aware hover backgrounds for card items - dark mode */
+  --card-item-hover-bg: rgba(255, 255, 255, 0.06);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
