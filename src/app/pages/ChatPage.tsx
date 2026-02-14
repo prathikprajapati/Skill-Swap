@@ -1,68 +1,88 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/app/components/ui/skill-swap-button";
-import { mockMatches, mockMessages, currentUser } from "@/app/data/mockData";
-import { Send, Paperclip, Calendar, Clock, Check, CheckCheck, MoreVertical, Phone, Video, ChevronLeft } from "lucide-react";
+import { Send, Paperclip, Calendar, Clock, Check, CheckCheck, MoreVertical, Phone, Video, ChevronLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/app/components/ui/Toast";
-
-interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: Date;
-  status: "sent" | "delivered" | "seen";
-}
+import { matchesApi, type Match } from "@/app/api/matches";
+import { messagesApi, type Message } from "@/app/api/messages";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export function ChatPage() {
-  const [selectedMatchId, setSelectedMatchId] = useState<string>("1");
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
-  const [messages, setMessages] = useState<Record<string, Message[]>>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+  const { user } = useAuth();
 
-  const selectedMatch = mockMatches.find((m) => m.id === selectedMatchId) || mockMatches[0];
+  const selectedMatch = matches.find((m) => m.id === selectedMatchId) || matches[0];
+  const otherUser = selectedMatch?.otherUser;
+
+  // Fetch matches on mount
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        setIsLoading(true);
+        const data = await matchesApi.getMyMatches();
+        setMatches(data);
+        if (data.length > 0 && !selectedMatchId) {
+          setSelectedMatchId(data[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch matches:", err);
+        showToast("error", "Failed to load matches");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMatches();
+  }, []);
+
+  // Fetch messages when selected match changes
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedMatchId) return;
+      
+      try {
+        const data = await messagesApi.getByMatchId(selectedMatchId);
+        setMessages(data);
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedMatchId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, selectedMatchId]);
+  }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedMatchId) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderId: currentUser.id,
-      text: messageInput,
-      timestamp: new Date(),
-      status: "sent",
-    };
-
-    setMessages((prev) => ({
-      ...prev,
-      [selectedMatchId]: [...(prev[selectedMatchId] || []), newMessage],
-    }));
-
-    setMessageInput("");
-
-    // Simulate message status updates
-    setTimeout(() => {
-      setMessages((prev) => ({
-        ...prev,
-        [selectedMatchId]: prev[selectedMatchId].map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "delivered" } : msg
-        ),
-      }));
-    }, 1000);
-
-    setTimeout(() => {
-      setMessages((prev) => ({
-        ...prev,
-        [selectedMatchId]: prev[selectedMatchId].map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "seen" } : msg
-        ),
-      }));
-    }, 3000);
+    setIsSending(true);
+    try {
+      await messagesApi.send({
+        match_id: selectedMatchId,
+        content: messageInput,
+      });
+      
+      // Refresh messages after sending
+      const updatedMessages = await messagesApi.getByMatchId(selectedMatchId);
+      setMessages(updatedMessages);
+      setMessageInput("");
+    } catch (err) {
+      console.error("Failed to send message:", err);
+      showToast("error", "Failed to send message");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleTemplateClick = (template: string) => {
@@ -103,14 +123,35 @@ export function ChatPage() {
   };
 
   // Group messages by date
-  const groupedMessages = (messages[selectedMatchId] || []).reduce((groups, message) => {
-    const date = new Date(message.timestamp).toDateString();
+  const groupedMessages = messages.reduce((groups, message) => {
+    const date = new Date(message.created_at).toDateString();
     if (!groups[date]) {
       groups[date] = [];
     }
     groups[date].push(message);
     return groups;
   }, {} as Record<string, Message[]>);
+
+  if (isLoading) {
+    return (
+      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (matches.length === 0) {
+    return (
+      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl mb-4" style={{ color: 'var(--text-primary)' }}>No matches yet</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Start matching with people to begin chatting
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-120px)] flex gap-4">
@@ -127,12 +168,12 @@ export function ChatPage() {
             Messages
           </h2>
           <p className="text-sm" style={{ color: '#BDBDBD' }}>
-            {mockMatches.length} active conversations
+            {matches.length} active conversation{matches.length !== 1 ? 's' : ''}
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {mockMatches.map((match) => (
+          {matches.map((match) => (
             <button
               key={match.id}
               onClick={() => setSelectedMatchId(match.id)}
@@ -144,20 +185,18 @@ export function ChatPage() {
               <div className="relative">
                 <div
                   className="w-10 h-10 rounded-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${match.avatar})` }}
+                  style={{ backgroundImage: `url(${match.otherUser?.avatar})` }}
                 />
-                {match.isOnline && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[var(--card)]" />
-                )}
               </div>
-              <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate" style={{ color: '#E0E0E0' }}>
-                  {match.name}
+                  {match.otherUser?.name || 'Unknown'}
                 </p>
                 <p className="text-xs truncate" style={{ color: '#757575' }}>
-                  {match.matchScore}% match
+                  Click to chat
                 </p>
               </div>
+
               {selectedMatchId === match.id && (
                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-indigo)' }} />
               )}
@@ -182,14 +221,14 @@ export function ChatPage() {
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${selectedMatch.avatar})` }}
+              style={{ backgroundImage: `url(${otherUser?.avatar})` }}
             />
             <div>
               <h3 className="font-semibold" style={{ color: '#E0E0E0', fontWeight: 500 }}>
-                {selectedMatch.name}
+                {otherUser?.name || 'Unknown'}
               </h3>
               <p className="text-xs" style={{ color: '#757575' }}>
-                {selectedMatch.isOnline ? "Online" : "Last seen recently"}
+                Active match
               </p>
             </div>
           </div>
@@ -228,8 +267,8 @@ export function ChatPage() {
               {/* Messages for this date */}
               <div className="space-y-3">
                 {dateMessages.map((message, index) => {
-                  const isMe = message.senderId === currentUser.id;
-                  const showAvatar = !isMe && (index === 0 || dateMessages[index - 1].senderId !== message.senderId);
+                  const isMe = message.sender_id === user?.id;
+                  const showAvatar = !isMe && (index === 0 || dateMessages[index - 1].sender_id !== message.sender_id);
 
                   return (
                     <div
@@ -240,7 +279,7 @@ export function ChatPage() {
                         {!isMe && showAvatar && (
                           <div
                             className="w-8 h-8 rounded-full bg-cover bg-center flex-shrink-0"
-                            style={{ backgroundImage: `url(${selectedMatch.avatar})` }}
+                            style={{ backgroundImage: `url(${otherUser?.avatar})` }}
                           />
                         )}
                         {!isMe && !showAvatar && <div className="w-8" />}
@@ -256,16 +295,18 @@ export function ChatPage() {
                             border: isMe ? '1px solid rgba(108, 99, 255, 0.3)' : '1px solid #3D3D3D',
                           }}
                         >
-                          <p style={{ color: '#E0E0E0', fontWeight: 400 }}>{message.text}</p>
+                          <p style={{ color: '#E0E0E0', fontWeight: 400 }}>{message.content}</p>
                           <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
                             <span className="text-[10px]" style={{ color: '#757575' }}>
-                              {formatTime(message.timestamp)}
+                              {formatTime(new Date(message.created_at))}
                             </span>
                             {isMe && (
                               <>
-                                {message.status === "sent" && <Check className="w-3 h-3" style={{ color: '#757575' }} />}
-                                {message.status === "delivered" && <CheckCheck className="w-3 h-3" style={{ color: '#757575' }} />}
-                                {message.status === "seen" && <CheckCheck className="w-3 h-3" style={{ color: '#3b82f6' }} />}
+                                {!message.is_read ? (
+                                  <Check className="w-3 h-3" style={{ color: '#757575' }} />
+                                ) : (
+                                  <CheckCheck className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                                )}
                               </>
                             )}
                           </div>
@@ -331,7 +372,7 @@ export function ChatPage() {
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                placeholder={`Plan your session with ${selectedMatch.name}...`}
+                placeholder={`Plan your session with ${otherUser?.name || 'them'}...`}
                 className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all"
                 style={{ 
                   backgroundColor: 'var(--section-bg)',
@@ -342,11 +383,15 @@ export function ChatPage() {
             </div>
             <Button 
               onClick={handleSendMessage} 
-              disabled={!messageInput.trim()}
+              disabled={!messageInput.trim() || isSending}
               size="sm"
               className="px-4"
             >
-              <Send className="w-4 h-4" />
+              {isSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </Button>
           </div>
         </div>

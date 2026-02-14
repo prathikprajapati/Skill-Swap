@@ -11,13 +11,15 @@ export interface MatchRequest {
     id: string;
     name: string;
     avatar?: string;
-    offeredSkills: string[];
-    wantedSkills: string[];
+    offeredSkills: Array<{ name: string }>;
+    wantedSkills: Array<{ name: string }>;
   };
   receiver?: {
     id: string;
     name: string;
     avatar?: string;
+    offeredSkills: Array<{ name: string }>;
+    wantedSkills: Array<{ name: string }>;
   };
 }
 

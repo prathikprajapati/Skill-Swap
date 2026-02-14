@@ -2,19 +2,21 @@ import { useState, useEffect, useRef } from "react";
 import { RequestCard } from "@/app/components/ui/request-card";
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { useToast } from "@/app/components/ui/Toast";
-import { mockIncomingRequests, mockSentRequests } from "@/app/data/mockData";
-import { Inbox, Send, ChevronDown, Clock, History } from "lucide-react";
+import { requestsApi, type MatchRequest } from "@/app/api/requests";
+import { Inbox, Send, ChevronDown, Clock, History, Loader2 } from "lucide-react";
 
 type TabType = "incoming" | "sent" | "history";
 
 export function RequestsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("incoming");
-  const [incomingRequests, setIncomingRequests] = useState(mockIncomingRequests);
-  const [sentRequests] = useState(mockSentRequests);
+  const [incomingRequests, setIncomingRequests] = useState<MatchRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<MatchRequest[]>([]);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [requestToReject, setRequestToReject] = useState<string | null>(null);
   const [showDeclineReason, setShowDeclineReason] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
   // Infinite scroll states
@@ -25,10 +27,39 @@ export function RequestsPage() {
   const loadMoreIncomingRef = useRef<HTMLDivElement>(null);
   const loadMoreSentRef = useRef<HTMLDivElement>(null);
 
-  const handleAccept = (id: string) => {
-    const request = incomingRequests.find(r => r.id === id);
-    setIncomingRequests(incomingRequests.filter((req) => req.id !== id));
-    showToast("success", `Match accepted! You can now chat with ${request?.name} 🎉`);
+  // Fetch requests on mount
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setIsLoading(true);
+        const [incoming, sent] = await Promise.all([
+          requestsApi.getIncoming(),
+          requestsApi.getSent(),
+        ]);
+        setIncomingRequests(incoming);
+        setSentRequests(sent);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch requests:", err);
+        setError("Failed to load requests. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  const handleAccept = async (id: string) => {
+    try {
+      await requestsApi.accept(id);
+      const request = incomingRequests.find(r => r.id === id);
+      setIncomingRequests(incomingRequests.filter((req) => req.id !== id));
+      showToast("success", `Match accepted! You can now chat with ${request?.sender?.name || 'them'} 🎉`);
+    } catch (err) {
+      console.error("Failed to accept request:", err);
+      showToast("error", "Failed to accept request. Please try again.");
+    }
   };
 
   const handleRejectClick = (id: string) => {
@@ -36,10 +67,16 @@ export function RequestsPage() {
     setShowRejectConfirm(true);
   };
 
-  const handleRejectConfirm = () => {
+  const handleRejectConfirm = async () => {
     if (requestToReject) {
-      setIncomingRequests(incomingRequests.filter((req) => req.id !== requestToReject));
-      showToast("info", declineReason ? `Request declined. Reason: ${declineReason}` : "Request declined");
+      try {
+        await requestsApi.reject(requestToReject);
+        setIncomingRequests(incomingRequests.filter((req) => req.id !== requestToReject));
+        showToast("info", declineReason ? `Request declined. Reason: ${declineReason}` : "Request declined");
+      } catch (err) {
+        console.error("Failed to reject request:", err);
+        showToast("error", "Failed to decline request. Please try again.");
+      }
       setRequestToReject(null);
       setDeclineReason("");
       setShowDeclineReason(false);
@@ -201,7 +238,21 @@ export function RequestsPage() {
 
       {/* Cards Grid - Consistent with Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        {activeTab === "incoming" && (
+        {isLoading ? (
+          <div className="col-span-full flex items-center justify-center py-20">
+            <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+          </div>
+        ) : error ? (
+          <div className="col-span-full p-12 text-center rounded-2xl border" style={{ backgroundColor: 'var(--section-bg)', borderColor: 'var(--border)' }}>
+            <p className="text-red-400 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : activeTab === "incoming" && (
           <>
             {incomingRequests.length > 0 ? (
               <>
@@ -212,7 +263,13 @@ export function RequestsPage() {
                     style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
                   >
                     <RequestCard
-                      user={request}
+                      user={{
+                        name: request.sender?.name || 'Unknown',
+                        avatar: request.sender?.avatar,
+                        offeredSkills: (request.sender?.offeredSkills || []).map((s: {name: string}) => s.name),
+                        wantedSkills: (request.sender?.wantedSkills || []).map((s: {name: string}) => s.name),
+                        timestamp: request.created_at,
+                      }}
                       type="incoming"
                       onAccept={() => handleAccept(request.id)}
                       onReject={() => handleRejectClick(request.id)}
@@ -292,7 +349,13 @@ export function RequestsPage() {
                     style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
                   >
                     <RequestCard
-                      user={request}
+                      user={{
+                        name: request.receiver?.name || 'Unknown',
+                        avatar: request.receiver?.avatar,
+                        offeredSkills: (request.receiver?.offeredSkills || []).map((s: {name: string}) => s.name),
+                        wantedSkills: (request.receiver?.wantedSkills || []).map((s: {name: string}) => s.name),
+                        timestamp: request.created_at,
+                      }}
                       type="sent"
                     />
                   </div>

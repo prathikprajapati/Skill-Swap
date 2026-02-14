@@ -7,7 +7,7 @@ import SpotlightCard from "./SpotlightCard";
 export interface RequestCardProps {
   user: {
     name: string;
-    avatar: string;
+    avatar?: string;
     offeredSkills: string[];
     wantedSkills: string[];
     timestamp?: string;

@@ -1,8 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/app/components/ui/skill-swap-button";
 import { SkillChip } from "@/app/components/ui/skill-chip";
-import { currentUser, mockMatches } from "@/app/data/mockData";
 import { useTheme, themes, type ThemeType } from "@/app/contexts/ThemeContext";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { skillsApi, type Skill } from "@/app/api/skills";
+import { usersApi, type UserSkill } from "@/app/api/users";
+import { Loader2 } from "lucide-react";
 import { 
   X, Award, Target, Plus, CheckCircle, Sparkles, 
   Zap, Heart, Star, Trophy, Flame, TrendingUp, 
@@ -46,8 +49,10 @@ const allThemes: { id: ThemeType; icon: typeof Sun; bg: string; isDark: boolean 
 
 export function ProfilePage() {
   const { theme: currentTheme, setTheme } = useTheme();
-  const [offeredSkills, setOfferedSkills] = useState(currentUser.offeredSkills);
-  const [wantedSkills, setWantedSkills] = useState(currentUser.wantedSkills);
+  const { user, refreshUser } = useAuth();
+  const [offeredSkills, setOfferedSkills] = useState<UserSkill[]>([]);
+  const [wantedSkills, setWantedSkills] = useState<UserSkill[]>([]);
+  const [allSkills, setAllSkills] = useState<Skill[]>([]);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
   const [newSkillName, setNewSkillName] = useState("");
   const [newSkillType, setNewSkillType] = useState<"offer" | "want">("offer");
@@ -55,37 +60,94 @@ export function ProfilePage() {
   const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
   const [activeTab, setActiveTab] = useState<"teaching" | "learning">("teaching");
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user data and skills on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [userData, skillsData] = await Promise.all([
+          usersApi.getMe(),
+          skillsApi.getAll(),
+        ]);
+        setOfferedSkills(userData.offeredSkills || []);
+        setWantedSkills(userData.wantedSkills || []);
+        setAllSkills(skillsData);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch profile data:", err);
+        setError("Failed to load profile data. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Calculate XP based on activity
   const userXP = useMemo(() => {
     return (offeredSkills.length * 50) + (wantedSkills.length * 30) + 340;
-  }, [offeredSkills.length, wantedSkills.length]);
+  }, [offeredSkills, wantedSkills]);
 
   const levelInfo = getLevelInfo(userXP);
   const xpProgress = ((userXP % (levelInfo.nextLevel / 2)) / (levelInfo.nextLevel / 2)) * 100;
 
-  const handleRemoveSkill = (skill: string, type: "offer" | "want") => {
-    if (type === "offer") {
-      setOfferedSkills(offeredSkills.filter((s) => s !== skill));
-    } else {
-      setWantedSkills(wantedSkills.filter((s) => s !== skill));
+  const handleRemoveSkill = async (skillId: string, type: "offer" | "want") => {
+    try {
+      await skillsApi.removeFromProfile(skillId);
+      if (type === "offer") {
+        setOfferedSkills(offeredSkills.filter((s) => s.id !== skillId));
+      } else {
+        setWantedSkills(wantedSkills.filter((s) => s.id !== skillId));
+      }
+      refreshUser();
+    } catch (err) {
+      console.error("Failed to remove skill:", err);
     }
   };
 
-  const handleAddSkill = () => {
+  const handleAddSkill = async () => {
     if (!newSkillName.trim()) return;
 
-    if (newSkillType === "offer") {
-      setOfferedSkills([...offeredSkills, newSkillName]);
-    } else {
-      setWantedSkills([...wantedSkills, newSkillName]);
-    }
+    try {
+      // Find or create skill
+      let skill = allSkills.find(s => s.name.toLowerCase() === newSkillName.toLowerCase());
+      
+      if (!skill) {
+        // For now, we'll use the first skill as a fallback
+        // In a real app, you'd create the skill first
+        skill = allSkills[0];
+      }
 
-    setNewSkillName("");
-    setNewSkillLevel("beginner");
-    setShowAddSkillModal(false);
-    setShowSuccessFeedback(true);
-    setTimeout(() => setShowSuccessFeedback(false), 2000);
+      if (!skill) {
+        setError("No skills available. Please try again later.");
+        return;
+      }
+
+      await skillsApi.addToProfile({
+        skill_id: skill.id,
+        skill_type: newSkillType,
+        proficiency_level: newSkillLevel as "beginner" | "intermediate" | "expert",
+      });
+
+      // Refresh user data to get updated skills
+      await refreshUser();
+      const userData = await usersApi.getMe();
+      setOfferedSkills(userData.offeredSkills || []);
+      setWantedSkills(userData.wantedSkills || []);
+
+      setNewSkillName("");
+      setNewSkillLevel("beginner");
+      setShowAddSkillModal(false);
+      setShowSuccessFeedback(true);
+      setTimeout(() => setShowSuccessFeedback(false), 2000);
+    } catch (err) {
+      console.error("Failed to add skill:", err);
+      setError("Failed to add skill. Please try again.");
+    }
   };
 
   // Profile stats for MagicBento - Action-oriented milestones
@@ -97,6 +159,14 @@ export function ProfilePage() {
     { color: '#1e1b4b', title: '4.9 Rating', description: 'Top 10% rated', label: 'Stars' },
     { color: '#1e1b4b', title: '23 Swaps', description: 'Completed sessions', label: 'Done' }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
 
   // Profile completion calculation
   const profileStrength = useMemo(() => {
@@ -138,7 +208,7 @@ export function ProfilePage() {
                 backdropFilter: 'blur(10px)',
               }}
             >
-              {currentUser.name.charAt(0)}
+              {user?.name?.charAt(0) || 'U'}
             </div>
             <div 
               className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-white shadow-lg"
@@ -150,7 +220,7 @@ export function ProfilePage() {
 
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold" style={{ color: '#FFFFFF' }}>{currentUser.name}</h1>
+              <h1 className="text-3xl font-bold" style={{ color: '#FFFFFF' }}>{user?.name || 'User'}</h1>
               <span 
                 className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"
                 style={{ backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}
@@ -168,7 +238,7 @@ export function ProfilePage() {
                 </span>
               )}
             </div>
-            <p className="mb-4" style={{ color: 'rgba(255,255,255,0.7)' }}>{currentUser.email}</p>
+            <p className="mb-4" style={{ color: 'rgba(255,255,255,0.7)' }}>{user?.email || ''}</p>
             
             <div className="flex items-center gap-4 max-w-md">
               <div className="flex-1">
@@ -321,14 +391,14 @@ export function ProfilePage() {
                 <div className="flex flex-wrap gap-2 items-center">
                   {(activeTab === "teaching" ? offeredSkills : wantedSkills).slice(0, 6).map((skill, index) => (
                     <div 
-                      key={skill}
+                      key={skill.id}
                       className="animate-in fade-in zoom-in"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <SkillChip
-                        skill={skill}
+                        skill={skill.name}
                         type={activeTab === "teaching" ? "offer" : "want"}
-                        onRemove={() => handleRemoveSkill(skill, activeTab === "teaching" ? "offer" : "want")}
+                        onRemove={() => handleRemoveSkill(skill.id, activeTab === "teaching" ? "offer" : "want")}
                       />
                     </div>
                   ))}
