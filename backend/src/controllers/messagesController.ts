@@ -12,7 +12,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const matchId = req.params.id;
+    const matchId = req.params.id as string;
 
     // Check if match exists
     const match = await prisma.match.findUnique({
@@ -98,7 +98,7 @@ export const markMessageAsRead = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const messageId = req.params.id;
+    const messageId = req.params.id as string;
 
     const message = await prisma.message.findFirst({
       where: {

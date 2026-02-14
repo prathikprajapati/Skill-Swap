@@ -83,11 +83,12 @@ export const removeUserSkill = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const skillId = req.params.id;
+    const skillId = req.params.id as string;
 
     const userSkill = await prisma.userSkill.findFirst({
       where: {
         id: skillId,
+
         user_id: userId,
       },
     });

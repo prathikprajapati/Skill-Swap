@@ -140,7 +140,7 @@ export const acceptRequest = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const requestId = req.params.id;
+    const requestId = req.params.id as string;
 
     const request = await prisma.matchRequest.findFirst({
       where: {
@@ -182,7 +182,7 @@ export const rejectRequest = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const requestId = req.params.id;
+    const requestId = req.params.id as string;
 
     const request = await prisma.matchRequest.findFirst({
       where: {

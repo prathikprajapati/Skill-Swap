@@ -5,6 +5,9 @@ import app from "../../src/server";
 
 const prisma = new PrismaClient();
 
+// Helper to delay between requests to avoid rate limiting
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 describe("Authentication Endpoints", () => {
   beforeAll(async () => {
     // Clean database
@@ -94,20 +97,24 @@ describe("Authentication Endpoints", () => {
   });
 
   describe("POST /auth/login", () => {
-    beforeEach(async () => {
-      // Create a user for login tests
+    let loginEmail: string;
+
+    beforeAll(async () => {
+      // Create a user for login tests (once for all tests)
+      loginEmail = `login_${Date.now()}@example.com`;
       await request(app).post("/auth/signup").send({
-        email: "login@example.com",
+        email: loginEmail,
         password: "password123",
         name: "Login Test User",
       });
+      await delay(100); // Small delay after signup
     });
 
     it("should login with valid credentials", async () => {
       const response = await request(app)
         .post("/auth/login")
         .send({
-          email: "login@example.com",
+          email: loginEmail,
           password: "password123",
         })
         .expect(200);
@@ -115,10 +122,12 @@ describe("Authentication Endpoints", () => {
       expect(response.body).toHaveProperty("token");
       expect(response.body).toHaveProperty("message", "Login successful");
       expect(response.body).toHaveProperty("user");
-      expect(response.body.user).toHaveProperty("email", "login@example.com");
+      expect(response.body.user).toHaveProperty("email", loginEmail);
+      await delay(100);
     });
 
     it("should return 401 for invalid email", async () => {
+      await delay(1000); // Delay to avoid rate limiting
       const response = await request(app)
         .post("/auth/login")
         .send({
@@ -128,21 +137,25 @@ describe("Authentication Endpoints", () => {
         .expect(401);
 
       expect(response.body).toHaveProperty("error", "Invalid credentials");
+      await delay(100);
     });
 
     it("should return 401 for invalid password", async () => {
+      await delay(1000); // Delay to avoid rate limiting
       const response = await request(app)
         .post("/auth/login")
         .send({
-          email: "login@example.com",
+          email: loginEmail,
           password: "wrongpassword",
         })
         .expect(401);
 
       expect(response.body).toHaveProperty("error", "Invalid credentials");
+      await delay(100);
     });
 
     it("should return 400 for invalid email format", async () => {
+      await delay(1000); // Delay to avoid rate limiting
       await request(app)
         .post("/auth/login")
         .send({
@@ -155,14 +168,17 @@ describe("Authentication Endpoints", () => {
 
   describe("JWT Token Validation", () => {
     let authToken: string;
+    let jwtTestEmail: string;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
+      jwtTestEmail = `jwttest_${Date.now()}@example.com`;
       const response = await request(app).post("/auth/signup").send({
-        email: "jwttest@example.com",
+        email: jwtTestEmail,
         password: "password123",
         name: "JWT Test User",
       });
       authToken = response.body.token;
+      await delay(100);
     });
 
     it("should access protected route with valid token", async () => {
@@ -171,7 +187,7 @@ describe("Authentication Endpoints", () => {
         .set("Authorization", `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty("email", "jwttest@example.com");
+      expect(response.body).toHaveProperty("email", jwtTestEmail);
     });
 
     it("should return 401 without token", async () => {
