@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { Sparkles, Mail, Lock, User, ArrowRight, ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import LightRays from "@/app/components/ui/LightRays";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,7 +13,10 @@ export function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login, signup } = useAuth();
 
   // Prevent animation flash on mount
   useEffect(() => {
@@ -29,8 +33,9 @@ export function AuthPage() {
     }, 300);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
     if (!email.includes("@")) {
       setEmailError("Please enter a valid email address");
@@ -38,10 +43,20 @@ export function AuthPage() {
     }
 
     setEmailError("");
-    if (isLogin) {
-      navigate("/app");
-    } else {
-      navigate("/app/onboarding");
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+        navigate("/app");
+      } else {
+        await signup(email, password, name);
+        navigate("/app/onboarding");
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Authentication failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -215,6 +230,16 @@ export function AuthPage() {
                 </motion.p>
               )}
 
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg"
+                >
+                  <p className="text-red-400 text-sm text-center">{error}</p>
+                </motion.div>
+              )}
+
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
@@ -237,12 +262,22 @@ export function AuthPage() {
               {/* Submit Button */}
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full mt-6 py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all duration-300 flex items-center justify-center gap-2"
+                disabled={isLoading}
+                whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                className="w-full mt-6 py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                {isLogin ? "Sign In" : "Create Account"}
-                <ArrowRight className="w-5 h-5" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {isLogin ? "Signing In..." : "Creating Account..."}
+                  </>
+                ) : (
+                  <>
+                    {isLogin ? "Sign In" : "Create Account"}
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </motion.button>
             </form>
 

@@ -2,28 +2,51 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { MatchCard } from "@/app/components/ui/match-card";
 import { SkillChip } from "@/app/components/ui/skill-chip";
 import { MatchCardSkeleton } from "@/app/components/ui/skeleton";
-import { mockMatches, currentUser } from "@/app/data/mockData";
 import { Users, Target, MessageSquare, Search, SlidersHorizontal, ChevronDown, Sparkles, Filter } from "lucide-react";
 import SpotlightCard from "@/app/components/ui/SpotlightCard";
+import { matchesApi, type RecommendedMatch } from "@/app/api/matches";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"score" | "name">("score");
   const [showFilters, setShowFilters] = useState(false);
   const [displayedMatches, setDisplayedMatches] = useState(6);
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeFilterChips, setActiveFilterChips] = useState<string[]>([]);
+  const [matches, setMatches] = useState<RecommendedMatch[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
   
-  const progressPercentage = currentUser.profileCompletion;
+  const progressPercentage = user?.profile_completion || 0;
 
   // Filter chips for skill-based filtering
   const filterChips = ["Teaching", "Learning", "High Match", "New"];
 
+  // Fetch matches from API
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        setIsLoading(true);
+        const data = await matchesApi.getRecommended();
+        setMatches(data);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch matches:", err);
+        setError("Failed to load matches. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMatches();
+  }, []);
+
   // Filter and sort matches
   const filteredMatches = useMemo(() => {
-    let filtered = mockMatches.filter((match) => {
+    let filtered = matches.filter((match) => {
       const matchesSearch = match.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         match.offeredSkills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
         match.wantedSkills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -46,7 +69,7 @@ export function DashboardPage() {
     }
 
     return filtered;
-  }, [searchQuery, sortBy, activeFilterChips]);
+  }, [matches, searchQuery, sortBy, activeFilterChips]);
 
   const toggleFilterChip = (chip: string) => {
     setActiveFilterChips(prev => 
@@ -89,7 +112,7 @@ export function DashboardPage() {
           className="text-3xl md:text-4xl mb-3 tracking-tight"
           style={{ color: 'var(--text-primary)', fontWeight: 700 }}
         >
-          Welcome back, {currentUser.name.split(' ')[0]}! 👋
+          Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
         </h1>
         <p 
           className="text-base md:text-lg"
@@ -419,13 +442,13 @@ export function DashboardPage() {
                   className="text-[10px] font-semibold uppercase tracking-wider mb-2"
                   style={{ color: '#BDBDBD' }}
                 >
-                  Can Teach ({currentUser.offeredSkills.length})
+                  Can Teach ({user?.offeredSkills?.length || 0})
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {currentUser.offeredSkills.slice(0, 4).map((skill) => (
-                    <SkillChip key={skill} skill={skill} type="offer" size="sm" />
+                  {(user?.offeredSkills || []).slice(0, 4).map((skill) => (
+                    <SkillChip key={skill.id} skill={skill.name} type="offer" size="sm" />
                   ))}
-                  {currentUser.offeredSkills.length > 4 && (
+                  {(user?.offeredSkills?.length || 0) > 4 && (
                     <span 
                       className="text-[10px] px-2 py-1 rounded-full font-medium"
                       style={{ 
@@ -433,7 +456,7 @@ export function DashboardPage() {
                         color: 'var(--text-secondary)',
                       }}
                     >
-                      +{currentUser.offeredSkills.length - 4}
+                      +{(user?.offeredSkills?.length || 0) - 4}
                     </span>
                   )}
                 </div>
@@ -451,13 +474,13 @@ export function DashboardPage() {
                   className="text-[10px] font-semibold uppercase tracking-wider mb-2"
                   style={{ color: '#BDBDBD' }}
                 >
-                  Want to Learn ({currentUser.wantedSkills.length})
+                  Want to Learn ({user?.wantedSkills?.length || 0})
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {currentUser.wantedSkills.slice(0, 4).map((skill) => (
-                    <SkillChip key={skill} skill={skill} type="want" size="sm" />
+                  {(user?.wantedSkills || []).slice(0, 4).map((skill) => (
+                    <SkillChip key={skill.id} skill={skill.name} type="want" size="sm" />
                   ))}
-                  {currentUser.wantedSkills.length > 4 && (
+                  {(user?.wantedSkills?.length || 0) > 4 && (
                     <span 
                       className="text-[10px] px-2 py-1 rounded-full font-medium"
                       style={{ 
@@ -465,7 +488,7 @@ export function DashboardPage() {
                         color: 'var(--text-secondary)',
                       }}
                     >
-                      +{currentUser.wantedSkills.length - 4}
+                      +{(user?.wantedSkills?.length || 0) - 4}
                     </span>
                   )}
                 </div>

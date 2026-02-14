@@ -6,7 +6,7 @@ import SpotlightCard from "./SpotlightCard";
 export interface MatchCardProps {
   user: {
     name: string;
-    avatar: string;
+    avatar?: string;
     matchScore: number;
     offeredSkills: string[];
     wantedSkills: string[];
