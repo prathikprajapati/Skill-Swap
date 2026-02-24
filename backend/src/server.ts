@@ -153,13 +153,22 @@ app.use(
 // Initialize WebSocket server
 const io = initializeSocket(httpServer);
 
-// Start server
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`🔒 Security: Helmet, Rate Limiting, Input Sanitization enabled`);
-  console.log(`🔌 WebSocket: Socket.io initialized`);
-});
+// Start server only if not in test mode or if explicitly requested
+// This prevents port conflicts during testing
+const isTestEnvironment = process.env.NODE_ENV === "test";
+const shouldStartServer =
+  !isTestEnvironment || process.env.FORCE_START_SERVER === "true";
+
+if (shouldStartServer) {
+  httpServer.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(
+      `🔒 Security: Helmet, Rate Limiting, Input Sanitization enabled`,
+    );
+    console.log(`🔌 WebSocket: Socket.io initialized`);
+  });
+}
 
 export default app;
 export { httpServer, io };

@@ -274,7 +274,8 @@ export const awardXP = async (req: AuthRequest, res: Response) => {
     const oldLevel = getLevelInfo(oldXP);
     const newLevel = getLevelInfo(user.xp || 0);
 
-    const leveledUp = oldLevel.level < newLevel.level;
+    const leveledUp =
+      oldLevel?.level && newLevel?.level && oldLevel.level < newLevel.level;
 
     // Record XP transaction
     await prisma.xPTransaction.create({
@@ -450,9 +451,12 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     // Add rank and level info
     const leaderboard = topUsers.map((user, index) => ({
       rank: index + 1,
-      ...user,
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar,
+      xp: user.xp || 0,
       level: getLevelInfo(user.xp || 0),
-      totalSkills: user._count?.user_skills || 0,
+      totalSkills: user._count?.user_skills ?? 0,
     }));
 
     res.json(leaderboard);

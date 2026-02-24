@@ -185,15 +185,7 @@ export function ProfilePage() {
     { color: '#1e1b4b', title: `${gamificationData?.stats.completedSessions || 0} Swaps`, description: 'Completed sessions', label: 'Done' }
   ];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
-      </div>
-    );
-  }
-
-  // Profile completion calculation
+  // Profile completion calculation - must be before any conditional returns
   const profileStrength = useMemo(() => {
     let score = 20;
     if (offeredSkills.length > 0) score += 25;
@@ -211,6 +203,14 @@ export function ProfilePage() {
   };
 
   const strengthInfo = getStrengthLabel(profileStrength);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[1400px] pb-20">

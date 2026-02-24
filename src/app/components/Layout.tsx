@@ -1,9 +1,7 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { LayoutDashboard, User, Inbox, MessageSquare } from "lucide-react";
 import Dock from "@/app/components/ui/Dock";
-import { MobileNavigation } from "@/app/components/MobileNavigation";
 import { PullToRefresh } from "@/app/components/PullToRefresh";
-import { Navigation } from "@/app/components/Navigation";
 import { useCallback } from "react";
 
 /**
@@ -57,14 +55,6 @@ export function Layout() {
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)" }}
     >
-      {/* Desktop Navigation - Hidden on mobile */}
-      <div className="hidden md:block">
-        <Navigation />
-      </div>
-
-      {/* Mobile Navigation */}
-      <MobileNavigation />
-
       {/* Main Content */}
       <PullToRefresh
         onRefresh={handleRefresh}
