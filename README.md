@@ -23,15 +23,15 @@ SkillSwap is a modern, full-stack web platform that connects people to exchange 
 - **React 18.3** - Modern UI library with hooks and concurrent features
 - **TypeScript 5.9** - Type-safe development with strict mode
 - **Vite 6.3** - Fast build tool with HMR and optimized production builds
-- **Tailwind CSS 4.1.12** - Utility-first styling with CSS variables
+- **Tailwind CSS 4.1** - Utility-first styling with CSS variables
 - **Framer Motion 12.23** - Smooth animations and transitions
 - **React Router 7.13** - Client-side routing with data APIs
-- **Socket.io Client** - Real-time WebSocket communication
+- **Socket.io Client 4.8** - Real-time WebSocket communication
 - **Radix UI 1.4** - Accessible UI primitives (50+ components)
-- **shadcn/ui** - Beautiful, customizable component library
 - **Lucide React** - Consistent, beautiful icon library
 - **Sonner** - Toast notifications
 - **React Hook Form** - Performant form management with validation
+- **Axios** - HTTP client for API requests
 
 ### Backend
 - **Node.js 18+** - Runtime environment
@@ -39,14 +39,13 @@ SkillSwap is a modern, full-stack web platform that connects people to exchange 
 - **TypeScript 5.9** - Type-safe development
 - **Prisma 5.22** - Database ORM with type safety and migrations
 - **MySQL 8** - Relational database (PostgreSQL-ready for production)
-- **Socket.io** - Real-time bidirectional event-based communication
-- **JWT 9.0** - Authentication tokens (15min expiry, refresh ready)
+- **Socket.io 4.8** - Real-time bidirectional event-based communication
+- **JWT 9.0** - Authentication tokens (15min expiry)
 - **bcryptjs** - Password hashing (12 rounds)
 - **express-validator** - Input validation and sanitization
-- **Helmet** - Security headers (CSP, XSS, clickjacking protection)
+- **Helmet 8.1** - Security headers (CSP, XSS, clickjacking protection)
 - **express-rate-limit** - API rate limiting (100 req/15min general, 5 req/15min auth)
 - **CORS** - Cross-origin resource sharing
-- **Multer** - File upload handling
 
 ### Testing & Quality
 - **Jest 29.7** - Testing framework with coverage
@@ -58,7 +57,7 @@ SkillSwap is a modern, full-stack web platform that connects people to exchange 
 ### DevOps & Tools
 - **Git** - Version control
 - **npm** - Package management
-- **Nodemon** - Development auto-restart
+- **nodemon** - Development auto-restart
 - **tsx** - TypeScript execution
 
 ## 📦 Quick Start
@@ -68,7 +67,7 @@ SkillSwap is a modern, full-stack web platform that connects people to exchange 
 Before you begin, ensure you have the following installed:
 - **Node.js 18+** - [Download here](https://nodejs.org/)
 - **MySQL 8+** - [Download here](https://dev.mysql.com/downloads/)
-- **npm** or **yarn** - Comes with Node.js
+- **npm** - Comes with Node.js
 - **Git** - [Download here](https://git-scm.com/)
 
 ### Installation Steps
@@ -82,13 +81,15 @@ cd skillswap
 
 #### 2. Install Frontend Dependencies
 
-```bash
+```
+bash
 npm install
 ```
 
 #### 3. Install Backend Dependencies
 
-```bash
+```
+bash
 cd backend
 npm install
 cd ..
@@ -119,13 +120,15 @@ CORS_ORIGIN="http://localhost:5173"
 
 Create a `.env` file in the root directory (for frontend):
 
-```env
+```
+env
 VITE_API_BASE_URL="http://localhost:3000"
 ```
 
 #### 5. Set Up the Database
 
-```bash
+```
+bash
 cd backend
 
 # Generate Prisma client
@@ -143,13 +146,15 @@ cd ..
 #### 6. Start the Development Servers
 
 **Terminal 1 - Backend:**
-```bash
+```
+bash
 cd backend
 npm run dev
 ```
 
 **Terminal 2 - Frontend:**
-```bash
+```
+bash
 npm run dev
 ```
 
@@ -158,7 +163,7 @@ npm run dev
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3000
 - **Health Check**: http://localhost:3000/health
-- **API Documentation**: See `docs/API_DOCUMENTATION.md`
+- **API Documentation**: See `API_DOCUMENTATION.md`
 
 ## 🗂️ Project Structure
 
@@ -176,35 +181,42 @@ skillswap/
 │   │   │   ├── skills.ts            # Skills API
 │   │   │   └── users.ts             # Users API
 │   │   ├── 📁 components/            # React components
-│   │   │   ├── 📁 ui/              # 50+ shadcn/ui components
-│   │   │   ├── ErrorBoundary.tsx    # Error handling
-│   │   │   ├── Layout.tsx           # App layout
+│   │   │   ├── 📁 ui/              # shadcn/ui components
+│   │   │   ├── 📁 figma/           # Figma-inspired components
+│   │   │   ├── 📁 lightswind/     # Light UI components
+│   │   │   ├── ErrorBoundary.tsx   # Error handling
+│   │   │   ├── Layout.tsx          # App layout
 │   │   │   ├── MobileNavigation.tsx # Mobile nav
 │   │   │   ├── Navigation.tsx       # Desktop nav
-│   │   │   ├── ProtectedRoute.tsx   # Auth guard
-│   │   │   ├── PullToRefresh.tsx    # Mobile pull-to-refresh
+│   │   │   ├── ProtectedRoute.tsx  # Auth guard
+│   │   │   ├── PullToRefresh.tsx   # Mobile pull-to-refresh
 │   │   │   ├── SkipNavigation.tsx  # Accessibility skip links
-│   │   │   └── ThemeSelector.tsx    # Theme switcher
+│   │   │   ├── ThemeSelector.tsx   # Theme switcher
+│   │   │   └── GlassFolder.tsx     # Animated folder component
 │   │   ├── 📁 contexts/             # React contexts
 │   │   │   ├── AuthContext.tsx      # Authentication state
-│   │   │   └── ThemeContext.tsx     # Theme management
+│   │   │   └── ThemeContext.tsx     # Theme management (9 themes)
 │   │   ├── 📁 hooks/                # Custom React hooks
 │   │   │   ├── useServiceWorker.ts  # PWA/offline support
 │   │   │   └── useSocket.ts         # WebSocket management
 │   │   ├── 📁 pages/                # Page components
-│   │   │   ├── AuthPage.tsx         # Login/Signup
-│   │   │   ├── ChatPage.tsx         # Real-time chat
-│   │   │   ├── DashboardPage.tsx    # Match recommendations
-│   │   │   ├── LandingPage.tsx      # Marketing page
-│   │   │   ├── OnboardingPage.tsx   # New user setup
-│   │   │   ├── ProfilePage.tsx      # User profile
-│   │   │   └── RequestsPage.tsx     # Match requests
-│   │   ├── 📁 utils/                # Utility functions
-│   │   ├── App.tsx                  # Root component
-│   │   └── routes.tsx               # Route definitions
-│   ├── 📁 styles/                   # Global styles
-│   └── 📁 assets/                   # Static assets
-├── 📁 backend/                      # Backend API
+│   │   │   ├── AuthPage.tsx        # Login/Signup
+│   │   │   ├── ChatPage.tsx        # Real-time chat
+│   │   │   ├── DashboardPage.tsx   # Match recommendations
+│   │   │   ├── LandingPage.tsx     # Marketing page
+│   │   │   ├── OnboardingPage.tsx  # New user setup
+│   │   │   ├── ProfilePage.tsx     # User profile
+│   │   │   └── RequestsPage.tsx    # Match requests
+│   │   ├── 📁 data/                # Mock data
+│   │   ├── 📁 utils/               # Utility functions
+│   │   ├── 📁 constants/           # App constants
+│   │   ├── App.tsx                # Root component
+│   │   └── routes.tsx             # Route definitions
+│   ├── 📁 styles/                 # Global styles
+│   ├── 📁 hooks/                  # Shared hooks
+│   ├── 📁 lib/                    # Utility libraries
+│   └── main.tsx                   # App entry point
+├── 📁 backend/                    # Backend API
 │   ├── 📁 src/
 │   │   ├── 📁 controllers/        # Route controllers
 │   │   │   ├── authController.ts
@@ -217,7 +229,7 @@ skillswap/
 │   │   ├── 📁 middleware/          # Express middleware
 │   │   │   ├── auth.ts             # JWT authentication
 │   │   │   └── upload.ts           # File upload handling
-│   │   ├── 📁 routes/               # API routes
+│   │   ├── 📁 routes/              # API routes
 │   │   │   ├── auth.ts
 │   │   │   ├── gamification.ts
 │   │   │   ├── matches.ts
@@ -225,34 +237,26 @@ skillswap/
 │   │   │   ├── requests.ts
 │   │   │   ├── skills.ts
 │   │   │   └── users.ts
-│   │   ├── 📁 types/                # TypeScript types
-│   │   ├── server.ts                # Express server entry
-│   │   └── socket.ts                # WebSocket server
+│   │   ├── 📁 types/               # TypeScript types
+│   │   ├── server.ts              # Express server entry
+│   │   └── socket.ts              # WebSocket server
 │   ├── 📁 prisma/
-│   │   ├── schema.prisma            # Database schema
-│   │   ├── seed.ts                  # Database seeding
-│   │   └── migrations/              # Database migrations
-│   ├── 📁 tests/                    # Test suites
-│   │   ├── 📁 integration/           # Integration tests
-│   │   └── 📁 unit/                  # Unit tests
-│   └── uploads/                     # File uploads
-├── 📁 docs/                         # Documentation
-│   ├── API_DOCUMENTATION.md         # Complete API docs
-│   ├── implementation_checklist.md    # Feature checklist
-│   ├── TODO.md                        # Project roadmap
-│   ├── backend-phase-1.md             # Phase 1 docs
-│   ├── backend-phase-2.md             # Phase 2 docs
-│   ├── backend-phase-3.md             # Phase 3 docs
-│   ├── backend-phase-4.md             # Phase 4 docs
-│   ├── backend-phase-5.md             # Phase 5 docs
-│   └── airllm_integration.md          # AI integration plan
-├── 📁 e2e/                            # E2E tests (Playwright)
-├── 📁 public/                         # Static public assets
-│   └── service-worker.js              # PWA service worker
-├── README.md                          # This file
-├── package.json                       # Frontend dependencies
-├── vite.config.ts                     # Vite configuration
-└── playwright.config.ts               # Playwright configuration
+│   │   ├── schema.prisma          # Database schema
+│   │   ├── seed.ts               # Database seeding
+│   │   └── migrations/           # Database migrations
+│   ├── 📁 tests/                  # Test suites
+│   │   ├── 📁 integration/        # Integration tests
+│   │   └── 📁 unit/               # Unit tests
+│   └── uploads/                   # File uploads
+├── 📁 e2e/                        # E2E tests (Playwright)
+├── 📁 public/                     # Static public assets
+│   └── service-worker.js          # PWA service worker
+├── 📁 FIGMA UI/                   # UI design files
+├── README.md                      # This file
+├── API_DOCUMENTATION.md           # API documentation
+├── package.json                   # Frontend dependencies
+├── vite.config.ts                 # Vite configuration
+└── playwright.config.ts          # Playwright configuration
 ```
 
 ## 🎨 Design System
@@ -285,16 +289,20 @@ Each theme uses CSS custom properties for consistent styling:
 ### Available Scripts
 
 #### Frontend (Root Directory)
-```bash
+```
+bash
 npm run dev          # Start Vite development server
 npm run build        # Build for production
 npm run preview      # Preview production build
 npm run test:e2e     # Run Playwright E2E tests
 npm run test:e2e:ui  # Run E2E tests with UI
+npm run test:e2e:debug # Debug E2E tests
+npm run test:e2e:report # View test report
 ```
 
 #### Backend
-```bash
+```
+bash
 cd backend
 
 # Development
@@ -302,18 +310,18 @@ npm run dev          # Start with hot reload (nodemon + tsx)
 
 # Production
 npm run build        # Compile TypeScript to dist/
-npm start            # Start production server
+npm start           # Start production server
 
 # Testing
-npm test             # Run all Jest tests
-npm run test:watch   # Run tests in watch mode
+npm test            # Run all Jest tests
+npm run test:watch  # Run tests in watch mode
 npm run test:coverage # Run tests with coverage report
-npm run test:unit    # Run unit tests only
+npm run test:unit   # Run unit tests only
 npm run test:integration # Run integration tests only
 
 # Code Quality
-npm run lint         # Run ESLint
-npm run lint:fix     # Fix ESLint issues
+npm run lint        # Run ESLint
+npm run lint:fix    # Fix ESLint issues
 
 # Database
 npm run prisma:generate  # Generate Prisma client
@@ -325,10 +333,11 @@ npm run prisma:seed      # Seed database with sample data
 
 ### Running Tests
 
-```bash
+```
+bash
 # Backend tests
 cd backend
-npm test                    # Run all tests (39 tests)
+npm test                    # Run all tests
 npm run test:unit          # Unit tests only
 npm run test:integration   # Integration tests only
 npm run test:coverage      # With coverage report
@@ -359,21 +368,24 @@ npm run test:e2e:ui        # Interactive UI mode
 
 ## 🔌 API Documentation
 
-Complete API documentation is available in `docs/API_DOCUMENTATION.md`.
+Complete API documentation is available in `API_DOCUMENTATION.md`.
 
 ### Quick Reference
 
-| Endpoint               | Method | Description              |
-| ---------------------- | ------ | ------------------------ |
-| `/auth/signup`         | POST   | Register new user        |
-| `/auth/login`          | POST   | User login               |
-| `/users/me`            | GET    | Get current user profile |
-| `/skills`              | GET    | List all skills          |
-| `/matches/recommended` | GET    | Get recommended matches  |
-| `/requests`            | POST   | Send match request       |
-| `/messages`            | POST   | Send message             |
-| `/gamification/stats`  | GET    | Get user gamification    |
-| `/health`              | GET    | Server health check      |
+| Endpoint               | Method   | Description              |
+| ---------------------- | -------- | ------------------------ |
+| `/auth/signup`         | POST     | Register new user        |
+| `/auth/login`          | POST     | User login               |
+| `/users/me`            | GET      | Get current user profile |
+| `/skills`              | GET      | List all skills          |
+| `/matches/recommended` | GET      | Get recommended matches  |
+| `/requests`            | GET/POST | Manage match requests    |
+| `/requests/:id/accept` | PUT      | Accept a request         |
+| `/requests/:id/reject` | PUT      | Reject a request         |
+| `/messages`            | POST     | Send message             |
+| `/messages/:id/read`   | PUT      | Mark message as read     |
+| `/gamification/stats`  | GET      | Get user gamification    |
+| `/health`              | GET      | Server health check      |
 
 ## 🏗️ Architecture
 
@@ -423,7 +435,7 @@ We welcome contributions! Please follow these guidelines:
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes
-4. Run tests: `npm test` (ensure all 39 tests pass)
+4. Run tests: `npm test` (ensure all tests pass)
 5. Commit: `git commit -m 'Add amazing feature'`
 6. Push: `git push origin feature/amazing-feature`
 7. Open a Pull Request
@@ -438,7 +450,8 @@ We welcome contributions! Please follow these guidelines:
 
 ### Development Workflow
 
-```bash
+```
+bash
 # Before committing
 npm run lint         # Check code style
 cd backend && npm test  # Run all tests
@@ -450,14 +463,16 @@ npm run test:coverage # Ensure coverage doesn't decrease
 ### Common Issues
 
 #### Database Connection Error
-```bash
+```
+bash
 # Ensure MySQL is running
 # Check DATABASE_URL format: mysql://user:password@localhost:3306/skillswap
 # Run migrations: cd backend && npx prisma migrate dev
 ```
 
 #### Port Already in Use
-```bash
+```
+bash
 # Kill process on port 3000 (backend)
 lsof -ti:3000 | xargs kill -9
 
@@ -466,7 +481,8 @@ PORT=3001
 ```
 
 #### CORS Errors
-```bash
+```
+bash
 # Ensure CORS_ORIGIN matches your frontend URL
 # Default: http://localhost:5173
 ```
@@ -477,16 +493,20 @@ PORT=3001
 - Check JWT_SECRET is set correctly in .env
 
 #### WebSocket Connection Issues
-```bash
+```
+bash
 # Ensure backend is running
 # Check browser console for connection errors
 # Verify CORS_ORIGIN includes frontend URL
 ```
 
+#### React Hook Errors ("Invalid hook call")
+- Ensure React and React-DOM are installed: `npm install react react-dom`
+- Check for multiple copies of React in node_modules
+
 ### Getting Help
 
-- Check `docs/API_DOCUMENTATION.md` for API details
-- Review `docs/TODO.md` for known issues
+- Check `API_DOCUMENTATION.md` for API details
 - Open an issue on GitHub with:
   - Steps to reproduce
   - Expected vs actual behavior
@@ -542,7 +562,7 @@ For questions, support, or collaboration:
 
 **Made with 💜 and ☕ by the SkillSwap Team**
 
-*Last Updated: January 2025*  
+*Last Updated: March 2025*  
 *Version: 1.0.0 MVP*
 
 [![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen)]() 
