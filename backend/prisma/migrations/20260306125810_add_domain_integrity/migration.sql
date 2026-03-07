@@ -5,7 +5,12 @@
   - A unique constraint covering the columns `[rated_user_id,rater_user_id,match_id]` on the table `ratings` will be added. If there are existing duplicate values, this will fail.
 
 */
--- DropIndex
+
+-- DropForeignKey (must be dropped before dropping the index it depends on)
+ALTER TABLE `ratings` DROP FOREIGN KEY `ratings_rated_user_id_fkey`;
+ALTER TABLE `ratings` DROP FOREIGN KEY `ratings_rater_user_id_fkey`;
+
+-- DropIndex (now safe to drop after foreign keys are removed)
 DROP INDEX `ratings_rated_user_id_rater_user_id_session_id_key` ON `ratings`;
 
 -- AlterTable
@@ -67,8 +72,12 @@ CREATE INDEX `users_created_at_idx` ON `users`(`created_at`);
 -- CreateIndex
 CREATE INDEX `users_is_deleted_idx` ON `users`(`is_deleted`);
 
--- AddForeignKey
+-- AddForeignKey (add back the foreign keys with the new structure)
 ALTER TABLE `ratings` ADD CONSTRAINT `ratings_match_id_fkey` FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `ratings` ADD CONSTRAINT `ratings_rated_user_id_fkey` FOREIGN KEY (`rated_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `ratings` ADD CONSTRAINT `ratings_rater_user_id_fkey` FOREIGN KEY (`rater_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `achievements` ADD CONSTRAINT `achievements_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

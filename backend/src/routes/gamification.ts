@@ -1,29 +1,25 @@
 import { Router } from "express";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireActiveUser } from "../middleware/auth";
 
 import {
   getUserStats,
-  awardXP,
   getXPHistory,
-  updateStreak,
   getLeaderboard,
 } from "../controllers/gamificationController";
 
 const router = Router();
 
 // Get user's gamification stats
-router.get("/stats", authenticateToken, getUserStats);
-
-// Award XP (admin or system use)
-router.post("/xp", authenticateToken, awardXP);
+// Requires active (non-deleted) user
+router.get("/stats", authenticateToken, requireActiveUser, getUserStats);
 
 // Get XP transaction history
-router.get("/xp/history", authenticateToken, getXPHistory);
-
-// Update user streak
-router.post("/streak", authenticateToken, updateStreak);
+// XP can only be earned via domain events (achievements, matches)
+// No public endpoint to award XP - prevents exploitation
+router.get("/xp/history", authenticateToken, requireActiveUser, getXPHistory);
 
 // Get leaderboard
-router.get("/leaderboard", authenticateToken, getLeaderboard);
+// Requires active (non-deleted) user
+router.get("/leaderboard", authenticateToken, requireActiveUser, getLeaderboard);
 
 export default router;

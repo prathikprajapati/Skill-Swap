@@ -12,12 +12,13 @@ import {
   markMessageAsRead,
   deleteMessage,
 } from "../controllers/messagesController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireActiveUser } from "../middleware/auth";
 
 const router = Router();
 
-// All match routes require authentication
+// All match routes require authentication AND active (non-deleted) user
 router.use(authenticateToken);
+router.use(requireActiveUser);
 
 // GET /matches/recommended - Get recommended matches
 router.get("/recommended", getRecommendedMatches);
@@ -36,6 +37,7 @@ export default router;
 // Separate router for message operations at root level
 export const messagesRouter = Router();
 messagesRouter.use(authenticateToken);
+messagesRouter.use(requireActiveUser);
 
 // POST /messages - Send message
 messagesRouter.post(

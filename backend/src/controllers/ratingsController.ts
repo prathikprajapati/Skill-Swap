@@ -5,7 +5,10 @@
  * - Composite unique constraint: [rated_user_id, rater_user_id, match_id]
  * - Ownership validation (can only delete your own rating)
  * - Prevent self-review
- * - Use Prisma aggregation for average rating (Option A)
+ * - Match completion is IRREVERSIBLE once both users have rated
+ *   (Design Decision: Rating deletion does NOT revert match status to 'active')
+ *   Rationale: Prevents gaming the system by deleting ratings to reset match
+ *   Alternative (not implemented): Recalculate completion on rating delete
  */
 
 import type { Response } from "express";
@@ -122,33 +125,40 @@ export const createRating = async (req: AuthRequest, res: Response) => {
 // Check if both users have now rated - complete the match
       let matchCompleted = false;
       if (match_id) {
-        // Re-verify match is still active inside transaction
+        // Get match and count ratings
         const match = await tx.match.findUnique({
-          where: { id: match_id, status: "active" },
+          where: { id: match_id },
         });
 
-        if (match) {
+        if (match && match.status === "active") {
           const ratings = await tx.rating.findMany({
             where: { match_id },
           });
 
           const raterIds = new Set(ratings.map((r) => r.rater_user_id));
           if (raterIds.has(match.user1_id) && raterIds.has(match.user2_id)) {
-            await tx.match.update({
-              where: { id: match_id },
+            // Safe pattern: Only update if status is still 'active'
+            // This prevents race conditions where multiple concurrent transactions
+            // might try to complete the same match
+            const result = await tx.match.updateMany({
+              where: { id: match_id, status: "active" },
               data: { status: "completed" },
             });
-            matchCompleted = true;
+            
+            // Only mark as completed if update succeeded (status was 'active')
+            if (result.count > 0) {
+              matchCompleted = true;
 
-            // Trigger achievement check for both users (fire-and-forget)
-            processAchievementTrigger(
-              AchievementTriggers.AFTER_MATCH_COMPLETE,
-              match.user1_id,
-            ).catch(console.error);
-            processAchievementTrigger(
-              AchievementTriggers.AFTER_MATCH_COMPLETE,
-              match.user2_id,
-            ).catch(console.error);
+              // Trigger achievement check for both users (fire-and-forget)
+              processAchievementTrigger(
+                AchievementTriggers.AFTER_MATCH_COMPLETE,
+                match.user1_id,
+              ).catch(console.error);
+              processAchievementTrigger(
+                AchievementTriggers.AFTER_MATCH_COMPLETE,
+                match.user2_id,
+              ).catch(console.error);
+            }
           }
         }
       }
@@ -182,6 +192,7 @@ export const createRating = async (req: AuthRequest, res: Response) => {
 
 /**
  * Helper: Check if both users have rated and complete the match
+ * Uses safe pattern to prevent race conditions
  */
 async function checkAndCompleteMatch(matchId: string) {
   const ratings = await prisma.rating.findMany({
@@ -193,25 +204,29 @@ async function checkAndCompleteMatch(matchId: string) {
     where: { id: matchId },
   });
 
-  if (!match) return;
+  if (!match || match.status !== "active") return;
 
   // Check if both users have submitted ratings
   const raterIds = new Set(ratings.map((r) => r.rater_user_id));
   if (raterIds.has(match.user1_id) && raterIds.has(match.user2_id)) {
-    await prisma.match.update({
-      where: { id: matchId },
+    // Safe pattern: Only update if status is still 'active'
+    const result = await prisma.match.updateMany({
+      where: { id: matchId, status: "active" },
       data: { status: "completed" },
     });
 
-    // Trigger achievement check for both users (fire-and-forget)
-    processAchievementTrigger(
-      AchievementTriggers.AFTER_MATCH_COMPLETE,
-      match.user1_id,
-    );
-    processAchievementTrigger(
-      AchievementTriggers.AFTER_MATCH_COMPLETE,
-      match.user2_id,
-    );
+    // Only trigger achievements if update succeeded
+    if (result.count > 0) {
+      // Trigger achievement check for both users (fire-and-forget)
+      processAchievementTrigger(
+        AchievementTriggers.AFTER_MATCH_COMPLETE,
+        match.user1_id,
+      );
+      processAchievementTrigger(
+        AchievementTriggers.AFTER_MATCH_COMPLETE,
+        match.user2_id,
+      );
+    }
   }
 }
 

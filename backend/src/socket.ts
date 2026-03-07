@@ -5,6 +5,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Validate JWT_SECRET at startup - no fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error(
+    "CRITICAL: JWT_SECRET environment variable is not defined. Set it before starting the server.",
+  );
+}
+
 // Extended socket interface with user data
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -26,7 +34,7 @@ export const initializeSocket = (httpServer: HttpServer): SocketIOServer => {
   });
 
   // Authentication middleware
-  io.use((socket: AuthenticatedSocket, next) => {
+  io.use(async (socket: AuthenticatedSocket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.query.token;
 
@@ -34,11 +42,28 @@ export const initializeSocket = (httpServer: HttpServer): SocketIOServer => {
         return next(new Error("Authentication error: No token provided"));
       }
 
-      const jwtSecret = process.env.JWT_SECRET || "your-secret-key";
-      const decoded = jwt.verify(token as string, jwtSecret) as {
+      const decoded = jwt.verify(token as string, JWT_SECRET) as {
         userId: string;
         name: string;
       };
+
+      // CRITICAL: Check if user account is deleted (soft delete enforcement)
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { is_deleted: true },
+      });
+
+      if (!user) {
+        return next(new Error("Authentication error: User not found"));
+      }
+
+      if (user.is_deleted) {
+        return next(
+          new Error(
+            "Account has been deleted. Please contact support.",
+          ),
+        );
+      }
 
       socket.userId = decoded.userId;
       socket.userName = decoded.name;
@@ -280,4 +305,23 @@ export const getConnectedUsersCount = (): number => {
 // Helper function to check if a user is online
 export const isUserOnline = (userId: string): boolean => {
   return connectedUsers.has(userId);
+};
+
+// Helper function to disconnect a user by ID (used when account is deleted)
+// This ensures that deleted users are immediately disconnected from WebSocket
+export const disconnectUserById = (io: SocketIOServer, userId: string): boolean => {
+  const socketId = connectedUsers.get(userId);
+  if (socketId) {
+    const socket = io.sockets.sockets.get(socketId);
+    if (socket) {
+      socket.emit("account_deleted", {
+        message: "Your account has been deleted. You have been disconnected.",
+      });
+      socket.disconnect(true);
+      connectedUsers.delete(userId);
+      console.log(`🔌 Forced disconnect for deleted user: ${userId}`);
+      return true;
+    }
+  }
+  return false;
 };

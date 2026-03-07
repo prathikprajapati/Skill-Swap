@@ -7,6 +7,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Validate JWT_SECRET at startup - no fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error(
+    "CRITICAL: JWT_SECRET environment variable is not defined. Set it before starting the server.",
+  );
+}
+
 export const register = async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
@@ -42,7 +50,7 @@ export const register = async (req: Request, res: Response) => {
     // Generate JWT token - Extended to 7 days for better UX
     const token = jwt.sign(
       { id: user.id },
-      process.env.JWT_SECRET || "fallback-secret",
+      JWT_SECRET,
       { expiresIn: "7d" },
     );
 
@@ -79,6 +87,13 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    // Check if user account is deleted (soft delete enforcement)
+    if (user.is_deleted) {
+      return res.status(403).json({
+        error: "Account has been deleted. Please contact support.",
+      });
+    }
+
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
@@ -88,7 +103,7 @@ export const login = async (req: Request, res: Response) => {
     // Generate JWT token - Extended to 7 days for better UX
     const token = jwt.sign(
       { id: user.id },
-      process.env.JWT_SECRET || "fallback-secret",
+      JWT_SECRET,
       { expiresIn: "7d" },
     );
 

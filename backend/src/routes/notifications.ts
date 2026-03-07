@@ -6,12 +6,13 @@ import {
   markAllNotificationsAsRead,
   getUnreadCount,
 } from "../controllers/notificationsController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireActiveUser } from "../middleware/auth";
 
 const router = Router();
 
-// All notification routes require authentication
+// All notification routes require authentication AND active (non-deleted) user
 router.use(authenticateToken);
+router.use(requireActiveUser);
 
 // GET /notifications - List notifications (with pagination)
 router.get("/", getNotifications);

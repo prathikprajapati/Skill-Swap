@@ -7,12 +7,13 @@ import {
   getUserRating,
   deleteRating,
 } from "../controllers/ratingsController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireActiveUser } from "../middleware/auth";
 
 const router = Router();
 
-// All ratings routes require authentication
+// All ratings routes require authentication AND active (non-deleted) user
 router.use(authenticateToken);
+router.use(requireActiveUser);
 
 // POST /ratings - Create a new rating
 router.post(

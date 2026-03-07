@@ -8,15 +8,17 @@ import {
   rejectRequest,
   cancelRequest,
 } from "../controllers/requestsController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireActiveUser } from "../middleware/auth";
 
 const router = Router();
 
-// All request routes require authentication
+// All request routes require authentication AND active (non-deleted) user
 router.use(authenticateToken);
+router.use(requireActiveUser);
 
 // POST /requests - Send match request
-router.post("/", [body("receiver_id").notEmpty().trim()], sendRequest);
+// receiver_id must be a valid UUID to prevent Prisma 500 errors
+router.post("/", [body("receiver_id").isUUID()], sendRequest);
 
 // GET /requests/incoming - List incoming requests
 router.get("/incoming", getIncomingRequests);

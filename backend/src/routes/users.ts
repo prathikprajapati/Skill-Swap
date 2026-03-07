@@ -5,7 +5,7 @@ import {
   updateProfile,
   deleteAccount,
 } from "../controllers/userController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireActiveUser } from "../middleware/auth";
 import { uploadAvatar, handleUploadError } from "../middleware/upload";
 
 const router = Router();
@@ -14,11 +14,14 @@ const router = Router();
 router.use(authenticateToken);
 
 // GET /users/me - Get current user profile
-router.get("/me", getProfile);
+// Requires active (non-deleted) user
+router.get("/me", requireActiveUser, getProfile);
 
 // PUT /users/me - Update user profile (with optional avatar upload)
+// Requires active (non-deleted) user
 router.put(
   "/me",
+  requireActiveUser,
   uploadAvatar,
   handleUploadError,
   [body("name").optional().trim().isLength({ min: 1, max: 255 })],
