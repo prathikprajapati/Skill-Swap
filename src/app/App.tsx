@@ -5,6 +5,7 @@ import { AuthProvider } from "@/app/contexts/AuthContext";
 import { ToastProvider } from "@/app/components/ui/Toast";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { SkipNavigation } from "@/app/components/SkipNavigation";
+import { QueryProvider } from "@/app/providers/QueryProvider";
 import { useServiceWorker } from "@/app/hooks/useServiceWorker";
 import { useEffect } from "react";
 
@@ -27,17 +28,19 @@ function ServiceWorkerRegistration() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <SkipNavigation />
-            <ServiceWorkerRegistration />
-            <main id="main-content" tabIndex={-1} className="outline-none">
-              <RouterProvider router={router} />
-            </main>
-          </ToastProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <QueryProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <SkipNavigation />
+              <ServiceWorkerRegistration />
+              <main id="main-content" tabIndex={-1} className="outline-none">
+                <RouterProvider router={router} />
+              </main>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryProvider>
     </ErrorBoundary>
   );
 }

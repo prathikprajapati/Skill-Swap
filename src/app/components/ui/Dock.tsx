@@ -45,6 +45,7 @@ type DockItemProps = {
   distance: number;
   baseItemSize: number;
   magnification: number;
+  label?: React.ReactNode;
 };
 
 function DockItem({
@@ -56,7 +57,9 @@ function DockItem({
   distance,
   magnification,
   baseItemSize,
+  label,
 }: DockItemProps) {
+
   const ref = useRef<HTMLDivElement>(null);
   const isHovered = useMotionValue(0);
 
@@ -93,7 +96,10 @@ function DockItem({
       tabIndex={0}
       role="button"
       aria-haspopup="true"
+      aria-label={typeof label === 'string' ? label : 'Dock item'}
     >
+
+
       {Children.map(children, (child) =>
         React.isValidElement(child)
           ? cloneElement(
@@ -215,7 +221,9 @@ export default function Dock({
             distance={distance}
             magnification={magnification}
             baseItemSize={baseItemSize}
+            label={item.label}
           >
+
             <DockIcon>{item.icon}</DockIcon>
             <DockLabel>{item.label}</DockLabel>
           </DockItem>

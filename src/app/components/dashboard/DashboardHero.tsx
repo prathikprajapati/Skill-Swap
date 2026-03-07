@@ -1,34 +1,5 @@
-"use client";
-
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import GlassFolder from "@/app/components/GlassFolder";
-import { CategoryModal } from "@/app/components/ui/category-modal";
-import { useAuth } from "@/app/contexts/AuthContext";
-import { 
-  MatchRecommendations, 
-  ProfileCompletionCard, 
-  SkillsSummaryCard, 
-  ActivityCard 
-} from "@/app/components/dashboard";
-
-// Lazy load heavy component for performance
-const Book = lazy(() => import("@/app/components/Book").then(m => ({ default: m.Book })));
-
-// Loading fallback for Book component
-function BookLoader() {
-  return (
-    <div className="w-full max-w-5xl mx-auto h-[600px] flex items-center justify-center rounded-2xl" style={{ backgroundColor: 'var(--section-bg)' }}>
-      <div className="flex flex-col items-center gap-4">
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }}
-        />
-        <p style={{ color: 'var(--text-secondary)' }}>Loading featured matches...</p>
-      </div>
-    </div>
-  );
-}
 
 const typingWords = ["Java", "Python", "French", "Japanese", "Marketing", "Stock Basics", "SQL", "React", "Design", "Photography"];
 
@@ -41,23 +12,14 @@ const testimonials = [
   { id: 6, name: "Tom Brown", text: "Teaching SQL helped me land my dream job. Forever grateful!" },
 ];
 
-const categories = [
-  { id: 1, name: "Programming", icon: "💻" },
-  { id: 2, name: "Soft Skills", icon: "🗣️" },
-  { id: 3, name: "Languages", icon: "🌍" },
-  { id: 4, name: "Design", icon: "🎨" },
-  { id: 5, name: "Business", icon: "💼" },
-  { id: 6, name: "Music", icon: "🎵" },
-];
+interface DashboardHeroProps {
+  userName?: string;
+}
 
-export function DashboardPage() {
+export function DashboardHero({ userName = "Learner" }: DashboardHeroProps) {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const { user } = useAuth();
-  
-  const progressPercentage = user?.profile_completion || 0;
 
   const waveGif = "https://images.unsplash.com/photo-1680182784939-45e8755efaab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXJ0b29uJTIwY2F0JTIwd2F2aW5nJTIwaGVsbG8lMjBmcmllbmRseXxlbnwxfHx8fDE3NzI0NzY1Nzd8MA&ixlib=rb-4.1.0&q=80&w=1080";
 
@@ -88,7 +50,7 @@ export function DashboardPage() {
   }, [displayedText, isDeleting, currentWordIndex]);
 
   return (
-    <div className="relative">
+    <>
       {/* Hero Section */}
       <section
         className="min-h-[80vh] flex items-center justify-center px-8 py-16"
@@ -106,7 +68,7 @@ export function DashboardPage() {
                 className="text-[56px] mb-4"
                 style={{ color: "var(--ivory)", fontWeight: 700, lineHeight: 1.2 }}
               >
-                Hello Learner!!!
+                Hello {userName}!!!
               </h1>
 
               <h2
@@ -140,6 +102,7 @@ export function DashboardPage() {
               >
                 Grab Whatever You Can
               </h3>
+
 
               <p
                 className="text-[16px] max-w-xl"
@@ -233,133 +196,19 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* Book Component Section - Lazy Loaded */}
-      <section
-        className="min-h-screen flex items-center justify-center px-8 py-16"
-        style={{ backgroundColor: "var(--section-bg)" }}
-      >
-        <Suspense fallback={<BookLoader />}>
-          <Book />
-        </Suspense>
-      </section>
-
-      {/* Divider */}
-      <div className="flex items-center justify-center py-12">
-        <div
-          className="w-full max-w-4xl h-[2px]"
-          style={{
-            background: `linear-gradient(to right, transparent, var(--primary), transparent)`,
-          }}
-        />
-      </div>
-
-      {/* Glass Folders Section */}
-      <section
-        className="min-h-screen flex items-center justify-center px-8 py-16"
-        style={{ backgroundColor: "var(--background)" }}
-      >
-        <div className="w-full max-w-7xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-[42px] text-center mb-16"
-            style={{ color: "var(--ivory)", fontWeight: 700 }}
-          >
-            Explore Categories
-          </motion.h2>
-
-          <div className="grid grid-cols-3 gap-12 justify-items-center">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => setSelectedCategory(category.id)}
-                className="cursor-pointer"
-              >
-                <GlassFolder icon={<span className="text-5xl">{category.icon}</span>} />
-                <p
-                  className="text-center mt-4 text-[18px]"
-                  style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                >
-                  {category.name}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Main Dashboard Content */}
-      <section
-        className="px-8 py-16"
-        style={{ backgroundColor: "var(--section-bg)" }}
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 
-              className="text-[32px] mb-2"
-              style={{ color: 'var(--text-primary)', fontWeight: 600 }}
-            >
-              Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
-            </h1>
-            <p 
-              className="text-[16px]"
-              style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}
-            >
-              Find people who complement your skills and start learning today
-            </p>
-          </div>
-
-          <div className="grid grid-cols-12 gap-8">
-            {/* Match Recommendations - 8 columns */}
-            <MatchRecommendations />
-
-            {/* Sidebar - 4 columns */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              <ProfileCompletionCard progressPercentage={progressPercentage} />
-              <SkillsSummaryCard 
-                offeredSkills={user?.offeredSkills || []}
-                wantedSkills={user?.wantedSkills || []}
-              />
-              <ActivityCard activeMatches={2} pendingRequests={3} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Category Modal */}
-      {selectedCategory && (
-        <CategoryModal
-          category={categories.find((c) => c.id === selectedCategory)!}
-          onClose={() => setSelectedCategory(null)}
-        />
-      )}
-
       <style>{`
         @keyframes scroll-left {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
         }
-
         @keyframes scroll-right {
           from { transform: translateX(-50%); }
           to { transform: translateX(0); }
         }
-
-        .animate-scroll-left {
-          animation: scroll-left 30s linear infinite;
-        }
-
-        .animate-scroll-right {
-          animation: scroll-right 30s linear infinite;
-        }
+        .animate-scroll-left { animation: scroll-left 30s linear infinite; }
+        .animate-scroll-right { animation: scroll-right 30s linear infinite; }
       `}</style>
-    </div>
+    </>
   );
 }
-
 

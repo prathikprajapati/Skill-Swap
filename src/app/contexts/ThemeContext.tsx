@@ -1,336 +1,402 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type ThemeType = "sapphire-dreams" | /* "deep-space" | "lavender-mist" | "graphite-mint" | "forest-mist" | */ "royal-gold" /* | "cosmic-purple" | "warm-burgundy" | "olive-garden" */;
+export type ThemeType = "the-palette" | "sapphire-dreams" | "royal-gold" | "minimalist";
+
+interface ThemeColors {
+  [key: string]: string;
+}
+
+interface ThemeInfo {
+  name: string;
+  description: string;
+  emoji: string;
+  colors: ThemeColors;
+}
+
+// THE PALETTE - Light
+const lightPaletteColors: ThemeColors = {
+  "--background": "#F5F1EC",
+  "--foreground": "#121418",
+  "--section-bg": "#E8EDE6",
+  "--card": "#FFFFFF",
+  "--card-foreground": "#121418",
+  "--border": "#D4E4CE",
+  "--primary": "#ACC8A2",
+  "--primary-dark": "#8CB79B",
+  "--primary-light": "#D4E4CE",
+  "--primary-foreground": "#1A2517",
+  "--accent": "#1A2517",
+  "--accent-light": "#E8EDE6",
+  "--text-primary": "#1A2517",
+  "--text-secondary": "#2F3640",
+  "--text-tertiary": "rgba(0, 0, 0, 0.5)",
+  "--text-disabled": "rgba(0, 0, 0, 0.3)",
+  "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
+  "--success": "#ACC8A2",
+  "--warning": "#8CB79B",
+  "--destructive": "#EF4444",
+  "--secondary": "#E8EDE6",
+  "--muted": "#E8EDE6",
+  "--muted-foreground": "#2F3640",
+  "--popover": "#FFFFFF",
+  "--popover-foreground": "#121418",
+  "--secondary-foreground": "#1A2517",
+  "--accent-foreground": "#F5F1EC",
+  "--destructive-foreground": "#FFFFFF",
+  "--input": "transparent",
+  "--input-background": "#FFFFFF",
+  "--switch-background": "#D4E4CE",
+  "--ring": "#ACC8A2",
+  "--sidebar": "#FFFFFF",
+  "--sidebar-foreground": "#1A2517",
+  "--sidebar-primary": "#ACC8A2",
+  "--sidebar-primary-foreground": "#1A2517",
+  "--sidebar-accent": "#E8EDE6",
+  "--sidebar-accent-foreground": "#1A2517",
+  "--sidebar-border": "#D4E4CE",
+  "--sidebar-ring": "#ACC8A2",
+};
+
+// THE PALETTE - Dark
+const darkPaletteColors: ThemeColors = {
+  "--background": "#121418",
+  "--foreground": "#F5F1EC",
+  "--section-bg": "#1A1D22",
+  "--card": "#1A1D22",
+  "--card-foreground": "#F5F1EC",
+  "--border": "#2F3640",
+  "--primary": "#2F3640",
+  "--primary-dark": "#1A2517",
+  "--primary-light": "#3A424E",
+  "--primary-foreground": "#F5F1EC",
+  "--accent": "#ACC8A2",
+  "--accent-light": "#1A2517",
+  "--text-primary": "#F5F1EC",
+  "--text-secondary": "#ACC8A2",
+  "--text-tertiary": "rgba(255, 255, 255, 0.5)",
+  "--text-disabled": "rgba(255, 255, 255, 0.3)",
+  "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
+  "--success": "#ACC8A2",
+  "--warning": "#8CB79B",
+  "--destructive": "#EF4444",
+  "--secondary": "#1A1D22",
+  "--muted": "#1A1D22",
+  "--muted-foreground": "#ACC8A2",
+  "--popover": "#1A1D22",
+  "--popover-foreground": "#F5F1EC",
+  "--secondary-foreground": "#F5F1EC",
+  "--accent-foreground": "#121418",
+  "--destructive-foreground": "#FFFFFF",
+  "--input": "#2F3640",
+  "--input-background": "#1A1D22",
+  "--switch-background": "#2F3640",
+  "--ring": "#ACC8A2",
+  "--sidebar": "#0D0F12",
+  "--sidebar-foreground": "#F5F1EC",
+  "--sidebar-primary": "#ACC8A2",
+  "--sidebar-primary-foreground": "#121418",
+  "--sidebar-accent": "#1A1D22",
+  "--sidebar-accent-foreground": "#F5F1EC",
+  "--sidebar-border": "#2F3640",
+  "--sidebar-ring": "#ACC8A2",
+  "--chart-1": "#ACC8A2",
+  "--chart-2": "#8CB79B",
+  "--chart-3": "#2F3640",
+  "--chart-4": "#1A2517",
+  "--chart-5": "#F5F1EC",
+};
+
+// SAPPHIRE DREAMS
+const sapphireDreamsColors: ThemeColors = {
+  "--background": "#0f172a",
+  "--foreground": "#e2e8f0",
+  "--section-bg": "#1e293b",
+  "--card": "#1e293b",
+  "--card-foreground": "#e2e8f0",
+  "--border": "#334155",
+  "--primary": "#6366f1",
+  "--primary-dark": "#4f46e5",
+  "--primary-light": "#818cf8",
+  "--primary-foreground": "#ffffff",
+  "--accent": "#8b5cf6",
+  "--accent-light": "#1e1b4b",
+  "--text-primary": "#f8fafc",
+  "--text-secondary": "#cbd5e1",
+  "--text-tertiary": "rgba(226, 232, 240, 0.5)",
+  "--text-disabled": "rgba(226, 232, 240, 0.3)",
+  "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
+  "--success": "#10b981",
+  "--warning": "#f59e0b",
+  "--destructive": "#ef4444",
+  "--secondary": "#334155",
+  "--muted": "#1e293b",
+  "--muted-foreground": "#94a3b8",
+  "--popover": "#1e293b",
+  "--popover-foreground": "#e2e8f0",
+  "--secondary-foreground": "#e2e8f0",
+  "--accent-foreground": "#f8fafc",
+  "--destructive-foreground": "#ffffff",
+  "--input": "#334155",
+  "--input-background": "#1e293b",
+  "--switch-background": "#334155",
+  "--ring": "#6366f1",
+  "--sidebar": "#0f172a",
+  "--sidebar-foreground": "#e2e8f0",
+  "--sidebar-primary": "#6366f1",
+  "--sidebar-primary-foreground": "#ffffff",
+  "--sidebar-accent": "#1e293b",
+  "--sidebar-accent-foreground": "#e2e8f0",
+  "--sidebar-border": "#334155",
+  "--sidebar-ring": "#6366f1",
+};
+
+// ROYAL GOLD
+const royalGoldColors: ThemeColors = {
+  "--background": "#451a03",
+  "--foreground": "#fef3c7",
+  "--section-bg": "#78350f",
+  "--card": "#78350f",
+  "--card-foreground": "#fef3c7",
+  "--border": "#92400e",
+  "--primary": "#f59e0b",
+  "--primary-dark": "#d97706",
+  "--primary-light": "#fbbf24",
+  "--primary-foreground": "#451a03",
+  "--accent": "#fbbf24",
+  "--accent-light": "#451a03",
+  "--text-primary": "#fffbeb",
+  "--text-secondary": "#fde68a",
+  "--text-tertiary": "rgba(254, 243, 199, 0.5)",
+  "--text-disabled": "rgba(254, 243, 199, 0.3)",
+  "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
+  "--success": "#10b981",
+  "--warning": "#f59e0b",
+  "--destructive": "#ef4444",
+  "--secondary": "#92400e",
+  "--muted": "#78350f",
+  "--muted-foreground": "#fcd34d",
+  "--popover": "#78350f",
+  "--popover-foreground": "#fef3c7",
+  "--secondary-foreground": "#fef3c7",
+  "--accent-foreground": "#451a03",
+  "--destructive-foreground": "#ffffff",
+  "--input": "#92400e",
+  "--input-background": "#78350f",
+  "--switch-background": "#92400e",
+  "--ring": "#f59e0b",
+  "--sidebar": "#451a03",
+  "--sidebar-foreground": "#fef3c7",
+  "--sidebar-primary": "#f59e0b",
+  "--sidebar-primary-foreground": "#451a03",
+  "--sidebar-accent": "#78350f",
+  "--sidebar-accent-foreground": "#fef3c7",
+  "--sidebar-border": "#92400e",
+  "--sidebar-ring": "#f59e0b",
+};
+
+// FIGMA MINIMALIST - Light
+const minimalistLightColors: ThemeColors = {
+  "--background": "#FAFAFA",
+  "--foreground": "#111827",
+  "--section-bg": "#F3F7F9",
+  "--card": "#FFFFFF",
+  "--card-foreground": "#111827",
+  "--border": "#E5E7EB",
+  "--primary": "#4F6D7A",
+  "--primary-dark": "#3A505B",
+  "--primary-light": "#E8F1F4",
+  "--primary-foreground": "#FFFFFF",
+  "--accent": "#6FB1A0",
+  "--accent-light": "#E3F3EF",
+  "--accent-indigo": "#6366F1",
+  "--accent-indigo-dark": "#4F46E5",
+  "--text-primary": "#111827",
+  "--text-secondary": "#6B7280",
+  "--text-tertiary": "rgba(0, 0, 0, 0.5)",
+  "--text-disabled": "rgba(0, 0, 0, 0.3)",
+  "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
+  "--success": "#22C55E",
+  "--warning": "#F59E0B",
+  "--destructive": "#EF4444",
+  "--secondary": "#F3F4F6",
+  "--muted": "#F3F4F6",
+  "--muted-foreground": "#6B7280",
+  "--popover": "#FFFFFF",
+  "--popover-foreground": "#111827",
+  "--secondary-foreground": "#111827",
+  "--accent-foreground": "#111827",
+  "--destructive-foreground": "#FFFFFF",
+  "--input": "transparent",
+  "--input-background": "#FFFFFF",
+  "--switch-background": "#cbced4",
+  "--ring": "#4F6D7A",
+  "--sidebar": "#FFFFFF",
+  "--sidebar-foreground": "#111827",
+  "--sidebar-primary": "#4F6D7A",
+  "--sidebar-primary-foreground": "#FFFFFF",
+  "--sidebar-accent": "#F9FAFB",
+  "--sidebar-accent-foreground": "#111827",
+  "--sidebar-border": "#E5E7EB",
+  "--sidebar-ring": "#4F6D7A",
+  "--ivory": "#FAFAFA",
+  "--glass-bg": "rgba(255, 255, 255, 0.7)",
+  "--glass-border": "rgba(255, 255, 255, 0.5)",
+  "--neon-glow": "0 0 20px rgba(79, 109, 122, 0.3)",
+};
+
+// FIGMA MINIMALIST - Dark
+const minimalistDarkColors: ThemeColors = {
+  "--background": "oklch(0.145 0 0)",
+  "--foreground": "oklch(0.985 0 0)",
+  "--section-bg": "oklch(0.205 0 0)",
+  "--card": "oklch(0.205 0 0)",
+  "--card-foreground": "oklch(0.985 0 0)",
+  "--border": "oklch(0.3 0 0)",
+  "--primary": "oklch(0.488 0.243 264.376)",
+  "--primary-dark": "oklch(0.4 0.2 264.376)",
+  "--primary-light": "oklch(0.55 0.25 264.376)",
+  "--primary-foreground": "oklch(0.205 0 0)",
+  "--accent": "oklch(0.696 0.17 162.48)",
+  "--accent-light": "oklch(0.3 0.1 162.48)",
+  "--accent-indigo": "oklch(0.488 0.243 264.376)",
+  "--accent-indigo-dark": "oklch(0.4 0.2 264.376)",
+  "--text-primary": "oklch(0.985 0 0)",
+  "--text-secondary": "oklch(0.708 0 0)",
+  "--text-tertiary": "rgba(255, 255, 255, 0.5)",
+  "--text-disabled": "rgba(255, 255, 255, 0.3)",
+  "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
+  "--success": "oklch(0.62 0.15 160)",
+  "--warning": "oklch(0.75 0.15 80)",
+  "--destructive": "oklch(0.396 0.141 25.723)",
+  "--secondary": "oklch(0.269 0 0)",
+  "--muted": "oklch(0.269 0 0)",
+  "--muted-foreground": "oklch(0.708 0 0)",
+  "--popover": "oklch(0.205 0 0)",
+  "--popover-foreground": "oklch(0.985 0 0)",
+  "--secondary-foreground": "oklch(0.985 0 0)",
+  "--accent-foreground": "oklch(0.205 0 0)",
+  "--destructive-foreground": "oklch(0.637 0.237 25.331)",
+  "--input": "oklch(0.269 0 0)",
+  "--input-background": "oklch(0.205 0 0)",
+  "--switch-background": "oklch(0.4 0 0)",
+  "--ring": "oklch(0.488 0.243 264.376)",
+  "--sidebar": "oklch(0.205 0 0)",
+  "--sidebar-foreground": "oklch(0.985 0 0)",
+  "--sidebar-primary": "oklch(0.488 0.243 264.376)",
+  "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+  "--sidebar-accent": "oklch(0.269 0 0)",
+  "--sidebar-accent-foreground": "oklch(0.985 0 0)",
+  "--sidebar-border": "oklch(0.3 0 0)",
+  "--sidebar-ring": "oklch(0.488 0.243 264.376)",
+  "--chart-1": "oklch(0.488 0.243 264.376)",
+  "--chart-2": "oklch(0.696 0.17 162.48)",
+  "--chart-3": "oklch(0.769 0.188 70.08)",
+  "--chart-4": "oklch(0.627 0.265 303.9)",
+  "--chart-5": "oklch(0.645 0.246 16.439)",
+  "--ivory": "oklch(0.985 0 0)",
+  "--glass-bg": "rgba(30, 30, 30, 0.7)",
+  "--glass-border": "rgba(255, 255, 255, 0.1)",
+  "--neon-glow": "0 0 20px rgba(111, 177, 160, 0.4)",
+};
+
+export const themes: Record<ThemeType, ThemeInfo> = {
+  "the-palette": {
+    name: "The Palette",
+    description: "Ivory White, Soft Sage & Deep Olive — elegant and organic",
+    emoji: "🎨",
+    colors: lightPaletteColors,
+  },
+  "sapphire-dreams": {
+    name: "Sapphire Dreams",
+    description: "Deep blue night sky with indigo and violet accents",
+    emoji: "💎",
+    colors: sapphireDreamsColors,
+  },
+  "royal-gold": {
+    name: "Royal Gold",
+    description: "Rich amber and gold tones for a majestic feel",
+    emoji: "👑",
+    colors: royalGoldColors,
+  },
+  "minimalist": {
+    name: "Minimalist",
+    description: "Clean, modern design with teal and mint accents",
+    emoji: "✨",
+    colors: minimalistLightColors,
+  },
+};
+
+// Map themes to their light/dark color sets
+const themeColorSets: Record<ThemeType, { light: ThemeColors; dark: ThemeColors }> = {
+  "the-palette": { light: lightPaletteColors, dark: darkPaletteColors },
+  "sapphire-dreams": { light: sapphireDreamsColors, dark: sapphireDreamsColors },
+  "royal-gold": { light: royalGoldColors, dark: royalGoldColors },
+  "minimalist": { light: minimalistLightColors, dark: minimalistDarkColors },
+};
 
 interface ThemeContextType {
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
+  isDarkMode: boolean;
+  setIsDarkMode: (isDark: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const themes = {
-  "sapphire-dreams": {
-    name: "Sapphire Dreams",
-    description: "Deep blues and rich tones — elegant and sophisticated",
-    emoji: "💎",
-    colors: {
-      "--background": "#07111a",
-      "--foreground": "#FFFFFF",
-      "--section-bg": "#0d1d2d",
-      "--card": "#162a3d",
-      "--card-foreground": "#FFFFFF",
-      "--border": "#3372ca",
-      "--primary": "#3372ca",
-      "--primary-dark": "#4c2aa3",
-      "--primary-light": "#1a3a5c",
-      "--primary-foreground": "#FFFFFF",
-      "--accent": "#4c2aaf",
-      "--accent-light": "#2d1b5e",
-      "--accent-indigo": "#3372ca",
-      "--accent-indigo-dark": "#4c2aa3",
-      "--text-primary": "#FFFFFF",
-      "--text-secondary": "#E8E8E8",
-      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
-      "--text-disabled": "#A0A0A0",
-      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#162a3d",
-      "--muted": "#162a3d",
-      "--muted-foreground": "#B0B0B0",
-    },
-  },
-  /*
-  "deep-space": {
-    name: "Deep Space",
-    description: "Dark cosmic palette — mysterious and expansive",
-    emoji: "🌌",
-    colors: {
-      "--background": "#11151c",
-      "--foreground": "#FFFFFF",
-      "--section-bg": "#1a1f2a",
-      "--card": "#252b38",
-      "--card-foreground": "#FFFFFF",
-      "--border": "#d66853",
-      "--primary": "#d66853",
-      "--primary-dark": "#7d4e57",
-      "--primary-light": "#3d2529",
-      "--primary-foreground": "#FFFFFF",
-      "--accent": "#7d4e57",
-      "--accent-light": "#4a2e33",
-      "--accent-indigo": "#d66853",
-      "--accent-indigo-dark": "#7d4e57",
-      "--text-primary": "#FFFFFF",
-      "--text-secondary": "#E0E0E0",
-      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
-      "--text-disabled": "#A0A0A0",
-      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#252b38",
-      "--muted": "#252b38",
-      "--muted-foreground": "#B0B0B0",
-    },
-  },
-  "lavender-mist": {
-    name: "Lavender Mist",
-    description: "Soft purples with warm accents — dreamy and artistic",
-    emoji: "🔮",
-    colors: {
-      "--background": "#f5f5f8",
-      "--foreground": "#1a1a2e",
-      "--section-bg": "#e8e8f0",
-      "--card": "#FFFFFF",
-      "--card-foreground": "#1a1a2e",
-      "--border": "#9b9ece",
-      "--primary": "#7d1d3f",
-      "--primary-dark": "#512500",
-      "--primary-light": "#f0e6eb",
-      "--primary-foreground": "#FFFFFF",
-      "--accent": "#3943b7",
-      "--accent-light": "#d8daf0",
-      "--accent-indigo": "#7d1d3f",
-      "--accent-indigo-dark": "#512500",
-      "--text-primary": "#1a1a2e",
-      "--text-secondary": "#3a3a4e",
-      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
-      "--text-disabled": "#7a7a8e",
-      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#e8e8f0",
-      "--muted": "#e8e8f0",
-      "--muted-foreground": "#5a5a6e",
-    },
-  },
-  "graphite-mint": {
-    name: "Graphite Mint",
-    description: "Cool greys with refreshing mint — modern and balanced",
-    emoji: "🌿",
-    colors: {
-      "--background": "#f8f9fa",
-      "--foreground": "#1a1d1f",
-      "--section-bg": "#e9ecef",
-      "--card": "#FFFFFF",
-      "--card-foreground": "#1a1d1f",
-      "--border": "#438e8b",
-      "--primary": "#6ec19e",
-      "--primary-dark": "#438e8b",
-      "--primary-light": "#d4f0e5",
-      "--primary-foreground": "#1a1d1f",
-      "--accent": "#438e8b",
-      "--accent-light": "#c3e5de",
-      "--accent-indigo": "#6ec19e",
-      "--accent-indigo-dark": "#438e8b",
-      "--text-primary": "#1a1d1f",
-      "--text-secondary": "#3a3d3f",
-      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
-      "--text-disabled": "#6a6d6f",
-      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#e9ecef",
-      "--muted": "#e9ecef",
-      "--muted-foreground": "#5a5d5f",
-    },
-  },
-  "forest-mist": {
-    name: "Forest Mist",
-    description: "Serene greens and soft whites — natural and calming",
-    emoji: "🌲",
-    colors: {
-      "--background": "#f4f8f7",
-      "--foreground": "#1F3A34",
-      "--section-bg": "#e8f0ee",
-      "--card": "#FFFFFF",
-      "--card-foreground": "#1F3A34",
-      "--border": "#8FA8A3",
-      "--primary": "#2D5A52",
-      "--primary-dark": "#1F3A34",
-      "--primary-light": "#E8F0EE",
-      "--primary-foreground": "#FFFFFF",
-      "--accent": "#8FA8A3",
-      "--accent-light": "#D5E0DD",
-      "--accent-indigo": "#2D5A52",
-      "--accent-indigo-dark": "#1F3A34",
-      "--text-primary": "#1F3A34",
-      "--text-secondary": "#3F5A54",
-      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
-      "--text-disabled": "#6F8A84",
-      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#e8f0ee",
-      "--muted": "#e8f0ee",
-      "--muted-foreground": "#5F7A74",
-    },
-  },
-  */
-  "royal-gold": {
-    name: "Royal Gold",
-    description: "Luxurious gold with deep burgundy — rich and opulent",
-    emoji: "👑",
-    colors: {
-      "--background": "#2a0a1f",
-      "--foreground": "#FFFFFF",
-      "--section-bg": "#3E0F2F",
-      "--card": "#5A1A3D",
-      "--card-foreground": "#FFFFFF",
-      "--border": "#D4A964",
-      "--primary": "#D4A964",
-      "--primary-dark": "#8B6914",
-      "--primary-light": "#F5E6C8",
-      "--primary-foreground": "#2a0a1f",
-      "--accent": "#8B6914",
-      "--accent-light": "#E8D5A3",
-      "--accent-indigo": "#D4A964",
-      "--accent-indigo-dark": "#8B6914",
-      "--text-primary": "#FFFFFF",
-      "--text-secondary": "#F0E0C0",
-      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
-      "--text-disabled": "#A89070",
-      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#5A1A3D",
-      "--muted": "#5A1A3D",
-      "--muted-foreground": "#D4A964",
-    },
-  },
-  /*
-  "cosmic-purple": {
-    name: "Cosmic Purple",
-    description: "Electric purple on black — futuristic and bold",
-    emoji: "🌠",
-    colors: {
-      "--background": "#0a0a0a",
-      "--foreground": "#FFFFFF",
-      "--section-bg": "#1A1A1A",
-      "--card": "#2D1B4E",
-      "--card-foreground": "#FFFFFF",
-      "--border": "#AC58E9",
-      "--primary": "#AC58E9",
-      "--primary-dark": "#7A3DBF",
-      "--primary-light": "#D4A5F9",
-      "--primary-foreground": "#0a0a0a",
-      "--accent": "#D4A5F9",
-      "--accent-light": "#2D1B4E",
-      "--accent-indigo": "#AC58E9",
-      "--accent-indigo-dark": "#7A3DBF",
-      "--text-primary": "#FFFFFF",
-      "--text-secondary": "#E0D0F0",
-      "--text-tertiary": "rgba(255, 255, 255, 0.5)",
-      "--text-disabled": "#A080C0",
-      "--card-item-hover-bg": "rgba(255, 255, 255, 0.06)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#2D1B4E",
-      "--muted": "#2D1B4E",
-      "--muted-foreground": "#AC58E9",
-    },
-  },
-  "warm-burgundy": {
-    name: "Warm Burgundy",
-    description: "Cream and burgundy — classic and refined",
-    emoji: "🍷",
-    colors: {
-      "--background": "#faf8f5",
-      "--foreground": "#90353D",
-      "--section-bg": "#f0ebe3",
-      "--card": "#FFFFFF",
-      "--card-foreground": "#90353D",
-      "--border": "#C4A77D",
-      "--primary": "#90353D",
-      "--primary-dark": "#5C2428",
-      "--primary-light": "#F0E0E2",
-      "--primary-foreground": "#FFFFFF",
-      "--accent": "#C4A77D",
-      "--accent-light": "#E8DCC8",
-      "--accent-indigo": "#90353D",
-      "--accent-indigo-dark": "#5C2428",
-      "--text-primary": "#90353D",
-      "--text-secondary": "#702530",
-      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
-      "--text-disabled": "#A68B7A",
-      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#f0ebe3",
-      "--muted": "#f0ebe3",
-      "--muted-foreground": "#702530",
-    },
-  },
-  "olive-garden": {
-    name: "Olive Garden",
-    description: "Earthy olive tones — grounded and organic",
-    emoji: "🫒",
-    colors: {
-      "--background": "#f5f5f0",
-      "--foreground": "#3A3A24",
-      "--section-bg": "#e8e8e0",
-      "--card": "#FFFFFF",
-      "--card-foreground": "#3A3A24",
-      "--border": "#8B8C6A",
-      "--primary": "#535434",
-      "--primary-dark": "#3A3A24",
-      "--primary-light": "#E8E9D4",
-      "--primary-foreground": "#FFFFFF",
-      "--accent": "#8B8C6A",
-      "--accent-light": "#C5C6A8",
-      "--accent-indigo": "#535434",
-      "--accent-indigo-dark": "#3A3A24",
-      "--text-primary": "#3A3A24",
-      "--text-secondary": "#5A5A44",
-      "--text-tertiary": "rgba(0, 0, 0, 0.5)",
-      "--text-disabled": "#8B8C6A",
-      "--card-item-hover-bg": "rgba(0, 0, 0, 0.03)",
-      "--success": "#22C55E",
-      "--warning": "#F59E0B",
-      "--destructive": "#EF4444",
-      "--secondary": "#e8e8e0",
-      "--muted": "#e8e8e0",
-      "--muted-foreground": "#6A6A54",
-    },
-  },
-  */
-};
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeType>(() => {
     const saved = localStorage.getItem("skill-swap-theme");
     const validThemes = Object.keys(themes) as ThemeType[];
-    // Check if saved theme is valid, otherwise default to sapphire-dreams
     if (saved && validThemes.includes(saved as ThemeType)) {
       return saved as ThemeType;
     }
-    return "sapphire-dreams";
+    return "the-palette";
+  });
+
+  const [isDarkMode, setIsDarkModeState] = useState<boolean>(() => {
+    const saved = localStorage.getItem("skill-swap-dark-mode");
+    if (saved) {
+      return saved === "true";
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   useEffect(() => {
     localStorage.setItem("skill-swap-theme", theme);
+    localStorage.setItem("skill-swap-dark-mode", String(isDarkMode));
     
-    // Apply theme colors to CSS variables
-    const themeColors = themes[theme].colors;
+    // Get the appropriate color set based on theme and mode
+    const colorSet = themeColorSets[theme];
+    const themeColors = isDarkMode ? colorSet.dark : colorSet.light;
+    
     Object.entries(themeColors).forEach(([key, value]) => {
       document.documentElement.style.setProperty(key, value);
     });
-  }, [theme]);
+    
+    // Set theme attribute for CSS selectors
+    if (theme === "minimalist") {
+      document.documentElement.setAttribute("data-theme", "minimalist");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme, isDarkMode]);
 
   const setTheme = (newTheme: ThemeType) => {
     setThemeState(newTheme);
   };
 
+  const setIsDarkMode = (isDark: boolean) => {
+    setIsDarkModeState(isDark);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, isDarkMode, setIsDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );

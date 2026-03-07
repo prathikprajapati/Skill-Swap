@@ -7,7 +7,7 @@
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "ES2020",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "es2020",
     "types": [],
     // For nodejs:

@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { getProfile, updateProfile } from "../controllers/userController";
+import {
+  getProfile,
+  updateProfile,
+  deleteAccount,
+} from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 import { uploadAvatar, handleUploadError } from "../middleware/upload";
 
@@ -20,5 +24,8 @@ router.put(
   [body("name").optional().trim().isLength({ min: 1, max: 255 })],
   updateProfile,
 );
+
+// PATCH /users/me - Soft delete user account
+router.patch("/me", deleteAccount);
 
 export default router;

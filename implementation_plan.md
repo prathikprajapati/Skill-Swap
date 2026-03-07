@@ -1,151 +1,144 @@
-v# Implementation Plan
+# Implementation Plan
 
 ## Overview
-Update the Skill Swap frontend with a new light theme color palette, add pagination to the Dashboard page, integrate glass-folder components with language icons, and apply LightRays background effects. The LandingPage and AuthPage remain unchanged.
+This document outlines the comprehensive implementation plan for the SkillSwap project, including bug fixes, documentation updates, and improvements based on thorough codebase analysis.
 
-## Types
+## Recent Bug Fixes Completed
 
-### Color Palette Types
-```
-typescript
-// New Light Theme Palette (60-30-10 Rule)
-interface ColorPalette {
-  // 60% - Dominant (Background)
-  ivoryWhite: '#F5F1EC';
-  // 30% - Secondary (Balance)
-  softSage: '#ACC8A2';
-  mutedSage: '#8CB79B';
-  // 10% - Accent (CTAs)
-  deepOlive: '#1A2517';
-  darkSlate: '#2F3640';
-  // Dark Mode
-  charcoalBlack: '#121418';
-}
+### 1. React Dependency Issue (FIXED)
+**Problem:** "Cannot read properties of null (reading 'useState')" error in RequestsPage.tsx
 
-// Language to Color Mapping
-interface LanguageColors {
-  [language: string]: string;
-}
+**Root Cause:** React and React-DOM were only listed as peer dependencies with `optional: true` but not installed as direct dependencies, causing React's internal context to be null.
 
-// Card Glass Effect Types
-interface GlassCardProps {
-  baseColor: string;
-  gradientColors?: string[];
-  isGlassEffect?: boolean;
-}
-```
+**Fix Applied:**
+- Added `react: ^18.3.1` and `react-dom: ^18.3.1` to direct dependencies in package.json
+- Ran `npm install` to install the packages
 
-### Pagination Types
-```
-typescript
-interface PaginationState {
-  currentPage: number;
-  itemsPerPage: number;
-  totalItems: number;
-}
-```
+**Files Modified:**
+- `package.json` - Added react and react-dom as direct dependencies
 
-## Files
+### 2. Toast.tsx Import Organization (FIXED)
+**Problem:** Imports were scattered in the middle of the file
 
-### New Files to Create
-1. `src/app/components/ui/LanguageIcons.tsx` - Language icon components mapping
-2. `src/app/components/ui/TopicFolder.tsx` - Glass folder with language icons
+**Fix Applied:**
+- Consolidated all imports at the top of the file
 
-### Existing Files to Modify
+**Files Modified:**
+- `src/app/components/ui/Toast.tsx` - Organized imports
 
-1. **`src/styles/theme.css`**
-   - Replace entire color palette with new 60-30-10 accessible colors
-   - Add CSS variables for language-based colors
-   - Update glass effect classes
+### 3. DashboardPage.tsx fetchPriority Warning (FIXED)
+**Problem:** `fetchPriority="high"` attribute caused React warning
 
-2. **`src/app/pages/DashboardPage.tsx`**
-   - Add LightRays background component (lighter version)
-   - Replace infinite scroll with pagination (max 5 cards per page)
-   - Add "Browse based on Topics" heading
-   - Add TopicFolder component below cards
-   - Apply glass effect to MatchCard components
-   - Add language-based gradient colors to cards
+**Fix Applied:**
+- Removed the fetchPriority attribute as it's not critical
 
-3. **`src/app/components/ui/match-card.tsx`**
-   - Add glass effect styling
-   - Add language-based color/gradient support
-   - Update to accept language prop for color mapping
+**Files Modified:**
+- `src/app/pages/DashboardPage.tsx` - Removed fetchPriority attribute
 
-4. **`src/app/components/ui/SpotlightCard.tsx`** (if needed)
-   - Add glass effect variant
+---
 
-### Configuration Updates
-- Update `src/app/constants/index.ts` with language-to-color mappings
+## Documentation Updates Required
 
-## Functions
+### 1. README.md Updates Needed
 
-### New Functions
-1. **`getLanguageColor(language: string): string`** - Maps programming language to its color
-2. **`getGradientColors(languages: string[]): string`** - Creates gradient from multiple languages
-3. **`usePagination(totalItems: number, itemsPerPage: number): PaginationState`** - Custom hook for pagination logic
+**Current Issues:**
+- Contains placeholder information that doesn't match actual project structure
+- Missing actual test results
+- Some paths don't match actual project structure (e.g., `docs/` folder doesn't exist)
+- Tech stack descriptions need verification
 
-### Modified Functions
-- **`DashboardPage.tsx`**
-  - Replace `displayedMatches` state with `currentPage` state
-  - Replace infinite scroll observer with pagination controls
-  - Add pagination rendering logic
-  - Add topic/folder section rendering
+**Plan:**
+- Verify all project structure matches documentation
+- Update tech stack versions to actual versions
+- Add actual test information
+- Fix file paths to match actual structure
+- Add troubleshooting section for common issues
 
-## Classes
+### 2. API Documentation Updates Needed
 
-### New Components
-1. **`TopicFolder`** (`src/app/components/ui/TopicFolder.tsx`)
-   - Props: `language: string`, `folderName: string`, `onClick?: () => void`
-   - Uses glass-folder.tsx with language icons
-   - Displays folder name below icon
+**Current Issues:**
+- Missing `/matches` endpoint (only `/matches/recommended` exists in backend)
+- Some endpoint paths may differ from actual implementation
+- WebSocket events need verification
+- Error codes need verification
 
-2. **`LanguageIcon`** (`src/app/components/ui/LanguageIcons.tsx`)
-   - Maps language names to appropriate icons
-   - Uses tech/stack icons for identification
+**Plan:**
+- Verify all backend routes match documentation
+- Add correct endpoint definitions
+- Verify WebSocket event names
+- Add actual error codes from implementation
 
-## Dependencies
-- No new npm packages required
-- Reuse existing `pagination.tsx` from lightswind
-- Reuse existing `glass-folder.tsx` from lightswind
-- Reuse existing `LightRays.tsx` component
+---
 
-## Testing
-- Test pagination navigation (prev/next/page numbers)
-- Verify glass effect rendering on cards
-- Verify language color mapping displays correctly
-- Verify gradient displays for multi-language cards
-- Test LightRays background performance (lighter settings)
-- Verify responsive design with new theme
+## Backend Route Verification
+
+### Verified Routes (from backend/src/routes/):
+
+| Route                   | Method   | Status   |
+| ----------------------- | -------- | -------- |
+| `/health`               | GET      | ✅ Exists |
+| `/auth/signup`          | POST     | ✅ Exists |
+| `/auth/login`           | POST     | ✅ Exists |
+| `/skills`               | GET      | ✅ Exists |
+| `/users/me`             | GET/PUT  | ✅ Exists |
+| `/matches/recommended`  | GET      | ✅ Exists |
+| `/matches/:id/messages` | GET      | ✅ Exists |
+| `/messages`             | POST     | ✅ Exists |
+| `/messages/:id/read`    | PUT      | ✅ Exists |
+| `/requests`             | GET/POST | ✅ Exists |
+| `/requests/:id/accept`  | PUT      | ✅ Exists |
+| `/requests/:id/reject`  | PUT      | ✅ Exists |
+| `/gamification/stats`   | GET      | ✅ Exists |
+
+**Note:** No direct `/matches` GET endpoint exists - frontend should use `/matches/recommended`
+
+---
 
 ## Implementation Order
 
-### Step 1: Update Theme CSS
-- [ ] Replace color variables in `src/styles/theme.css` with new 60-30-10 palette
-- [ ] Add glass effect CSS classes
-- [ ] Add language color CSS variables
+### Phase 1: Bug Fixes
+1. [x] Fix React dependency issue - Added react and react-dom as direct dependencies
+2. [x] Fix Toast.tsx import organization
+3. [x] Fix DashboardPage.tsx fetchPriority warning
 
-### Step 2: Create Language Icons Component
-- [ ] Create `src/app/components/ui/LanguageIcons.tsx`
-- [ ] Map common programming languages to icons
-- [ ] Include fallback icon for unknown languages
+### Phase 2: Backend Endpoint Fix
+4. [x] Add missing /matches endpoint to get user's accepted matches
+   - Added getMyMatches controller function
+   - Added GET /matches route
 
-### Step 3: Create TopicFolder Component
-- [ ] Create `src/app/components/ui/TopicFolder.tsx`
-- [ ] Integrate glass-folder with language icons
-- [ ] Add folder name display
+### Phase 3: Documentation Updates
+5. [x] Update README.md with accurate project information
+6. [x] Update API_DOCUMENTATION.md with correct endpoints
+7. [x] Create comprehensive implementation plan document
+### Phase 4: Code Quality Improvements (Future)
+1. [ ] Improve error handling consistency
+2. [ ] Add comprehensive test coverage
 
-### Step 4: Update MatchCard Component
-- [ ] Add glass effect styling
-- [ ] Add language color support
-- [ ] Update props interface
+### Phase 5: Performance & Security (Future)
+1. [ ] Optimize database queries
+2. [ ] Add caching layer
+3. [ ] Enhance security headers
+---
 
-### Step 5: Update DashboardPage
-- [ ] Add LightRays background (lighter settings)
-- [ ] Implement pagination (5 cards per page)
-- [ ] Add "Browse based on Topics" heading
-- [ ] Add TopicFolder section
-- [ ] Connect language colors to cards
+## Notes
 
-### Step 6: Update Updates_requirement.md
-- [ ] Document all changes made
-- [ ] Update implementation checklist
+1. ✅ FIXED: The backend `/matches` route - Added `GET /matches` endpoint to return user's accepted matches
+
+2. WebSocket connection uses Socket.io on the same port as the HTTP server.
+
+3. Database uses Prisma ORM with MySQL.
+
+4. Authentication uses JWT with 15-minute expiry.
+
+## Summary of Changes
+
+### Bug Fixes Completed:
+- Added React 18.3.1 and React-DOM 18.3.1 as direct dependencies (fixes "Cannot read properties of null" error)
+- Organized Toast.tsx imports
+- Removed fetchPriority attribute from DashboardPage.tsx
+- Added `/matches` endpoint to backend for getting user's accepted matches
+
+### Documentation Updated:
+- README.md - Complete rewrite with accurate project information
+- API_DOCUMENTATION.md - Complete rewrite with verified endpoints
+- implementation_plan.md - Comprehensive implementation plan created

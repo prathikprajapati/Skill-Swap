@@ -1,5 +1,5 @@
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
-import { useEffect } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import SpotlightCard from "./SpotlightCard";
 
 export type ToastType = "success" | "error" | "warning" | "info";
@@ -78,9 +78,7 @@ export function Toast({ type, message, onClose, duration = 3000 }: ToastProps) {
   );
 }
 
-// Toast Container Hook
-import { createContext, useContext, useState, type ReactNode } from "react";
-
+// Toast Context
 interface ToastContextType {
   showToast: (type: ToastType, message: string) => void;
 }

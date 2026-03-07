@@ -1,503 +1,401 @@
-import { useState, useEffect, useRef } from "react";
-import { RequestCard } from "@/app/components/ui/request-card";
-import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
-import { useToast } from "@/app/components/ui/Toast";
-import { requestsApi, type MatchRequest } from "@/app/api/requests";
-import { Inbox, Send, ChevronDown, Clock, History, Loader2 } from "lucide-react";
+"use client";
 
-type TabType = "incoming" | "sent" | "history";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import GlassFolder from "@/app/components/GlassFolder";
+import { X, Check, Clock, Archive } from "lucide-react";
+import { mockIncomingRequests, mockSentRequests } from "@/app/data/mockData";
+import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { useToast } from "@/app/components/ui/Toast";
+
+type FolderType = "received" | "sent" | "logs" | null;
+
+// Mock logs - would come from backend in real app
+const mockLogs = [
+  {
+    id: "1",
+    name: "Priya Sharma",
+    avatar: "https://images.unsplash.com/photo-1581065178026-390bc4e78dad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhc2lhbiUyMHdvbWFuJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MDAzODM3MHww&ixlib=rb-4.1.0&q=80&w=400",
+    action: "Accepted",
+    date: "2 days ago",
+    status: "success" as const,
+  },
+  {
+    id: "2",
+    name: "James Wilson",
+    avatar: "https://images.unsplash.com/photo-1656313826909-1f89d1702a81?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaXZlcnNlJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzcwMDE4MDQ4fDA&ixlib=rb-4.1.0&q=80&w=400",
+    action: "Declined",
+    date: "5 days ago",
+    status: "error" as const,
+  },
+  {
+    id: "3",
+    name: "Rohan Gupta",
+    avatar: "https://images.unsplash.com/photo-1649589244330-09ca58e4fa64?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHByb2Zlc3Npb25hbCUyMHBvcnRyYWl0fGVufDF8fHx8MTc3MDA3MzA5MXww&ixlib=rb-4.1.0&q=80&w=400",
+    action: "Expired",
+    date: "1 week ago",
+    status: "warning" as const,
+  },
+];
 
 export function RequestsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("incoming");
-  const [incomingRequests, setIncomingRequests] = useState<MatchRequest[]>([]);
-  const [sentRequests, setSentRequests] = useState<MatchRequest[]>([]);
-  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
-  const [requestToReject, setRequestToReject] = useState<string | null>(null);
-  const [showDeclineReason, setShowDeclineReason] = useState(false);
-  const [declineReason, setDeclineReason] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<FolderType>(null);
+  const [incomingRequests, setIncomingRequests] = useState(mockIncomingRequests);
   const { showToast } = useToast();
 
-  // Infinite scroll states
-  const [displayedIncoming, setDisplayedIncoming] = useState(6);
-  const [displayedSent, setDisplayedSent] = useState(6);
-  const [loadingMoreIncoming, setLoadingMoreIncoming] = useState(false);
-  const [loadingMoreSent, setLoadingMoreSent] = useState(false);
-  const loadMoreIncomingRef = useRef<HTMLDivElement>(null);
-  const loadMoreSentRef = useRef<HTMLDivElement>(null);
-
-  // Fetch requests on mount
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        setIsLoading(true);
-        const [incoming, sent] = await Promise.all([
-          requestsApi.getIncoming(),
-          requestsApi.getSent(),
-        ]);
-        setIncomingRequests(incoming);
-        setSentRequests(sent);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch requests:", err);
-        setError("Failed to load requests. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRequests();
-  }, []);
-
-  const handleAccept = async (id: string) => {
-    try {
-      await requestsApi.accept(id);
-      const request = incomingRequests.find(r => r.id === id);
-      setIncomingRequests(incomingRequests.filter((req) => req.id !== id));
-      showToast("success", `Match accepted! You can now chat with ${request?.sender?.name || 'them'} 🎉`);
-    } catch (err) {
-      console.error("Failed to accept request:", err);
-      showToast("error", "Failed to accept request. Please try again.");
-    }
+  const handleAccept = (id: string) => {
+    const req = incomingRequests.find((r) => r.id === id);
+    setIncomingRequests(incomingRequests.filter((req) => req.id !== id));
+    showToast("success", `Match accepted! You can now chat with ${req?.name} 🎉`);
   };
 
-  const handleRejectClick = (id: string) => {
-    setRequestToReject(id);
-    setShowRejectConfirm(true);
+  const handleReject = (id: string) => {
+    setIncomingRequests(incomingRequests.filter((req) => req.id !== id));
+    showToast("info", "Request declined");
   };
-
-  const handleRejectConfirm = async () => {
-    if (requestToReject) {
-      try {
-        await requestsApi.reject(requestToReject);
-        setIncomingRequests(incomingRequests.filter((req) => req.id !== requestToReject));
-        showToast("info", declineReason ? `Request declined. Reason: ${declineReason}` : "Request declined");
-      } catch (err) {
-        console.error("Failed to reject request:", err);
-        showToast("error", "Failed to decline request. Please try again.");
-      }
-      setRequestToReject(null);
-      setDeclineReason("");
-      setShowDeclineReason(false);
-    }
-    setShowRejectConfirm(false);
-  };
-
-  // Infinite scroll for incoming requests
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMoreIncoming && displayedIncoming < incomingRequests.length) {
-          setLoadingMoreIncoming(true);
-          setTimeout(() => {
-            setDisplayedIncoming(prev => Math.min(prev + 6, incomingRequests.length));
-            setLoadingMoreIncoming(false);
-          }, 1000);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (loadMoreIncomingRef.current) {
-      observer.observe(loadMoreIncomingRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [displayedIncoming, incomingRequests.length, loadingMoreIncoming]);
-
-  // Infinite scroll for sent requests
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMoreSent && displayedSent < sentRequests.length) {
-          setLoadingMoreSent(true);
-          setTimeout(() => {
-            setDisplayedSent(prev => Math.min(prev + 6, sentRequests.length));
-            setLoadingMoreSent(false);
-          }, 1000);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (loadMoreSentRef.current) {
-      observer.observe(loadMoreSentRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [displayedSent, sentRequests.length, loadingMoreSent]);
-
-  // Reset displayed counts when tab changes
-  useEffect(() => {
-    setDisplayedIncoming(6);
-    setDisplayedSent(6);
-  }, [activeTab]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-8 pb-6 border-b" style={{ borderColor: '#2D2D2D' }}>
-        <h2 
-          className="text-3xl md:text-4xl mb-3 tracking-tight"
-          style={{ color: '#E0E0E0', fontWeight: 700 }}
+    <div className="min-h-[80vh] flex items-center justify-center pb-20">
+      <div className="w-full max-w-7xl mx-auto">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-[42px] text-center mb-16"
+          style={{ color: "var(--ivory)", fontWeight: 700 }}
         >
-          Match Requests
-        </h2>
-        <p 
-          className="text-base md:text-lg"
-          style={{ color: '#BDBDBD', lineHeight: 1.6 }}
-        >
-          Review incoming requests and track your sent requests
-        </p>
-      </div>
+          Manage Requests
+        </motion.h2>
 
-      {/* Tabs */}
-      <div className="mb-6 border-b" style={{ borderColor: '#2D2D2D' }}>
-        <div className="flex gap-1">
-          <button
-            onClick={() => setActiveTab("incoming")}
-            className="pb-4 px-4 relative transition-all duration-200 flex items-center gap-2 rounded-t-lg"
-            style={{
-              color: activeTab === "incoming" ? 'var(--accent-indigo)' : '#BDBDBD',
-              fontWeight: activeTab === "incoming" ? 600 : 400,
-              backgroundColor: activeTab === "incoming" ? 'var(--section-bg)' : 'transparent',
-            }}
+        <div className="grid grid-cols-3 gap-16 justify-items-center">
+          {/* Received Folder */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0 }}
+            onClick={() => setSelectedFolder("received")}
+            className="cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label={`Received requests folder - ${incomingRequests.length} requests`}
           >
-            <Inbox className="w-4 h-4" />
-            <span className="text-sm">Incoming</span>
-            {incomingRequests.length > 0 && (
-              <span 
-                className="px-2 py-0.5 rounded-full text-xs min-w-[20px] text-center font-semibold"
-                style={{
-                  backgroundColor: '#FF6B6B',
-                  color: 'white',
-                }}
-              >
-                {incomingRequests.length}
-              </span>
-            )}
-            {activeTab === "incoming" && (
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-0.5" 
-                style={{ backgroundColor: 'var(--accent-indigo)' }}
-              />
-            )}
-          </button>
+            <GlassFolder icon={<span className="text-5xl">📥</span>} />
+            <p
+              className="text-center mt-4 text-[18px]"
+              style={{ color: "var(--text-primary)", fontWeight: 600 }}
+            >
+              Received ({incomingRequests.length})
+            </p>
+          </motion.div>
 
-          <button
-            onClick={() => setActiveTab("sent")}
-            className="pb-4 px-4 relative transition-all duration-200 flex items-center gap-2 rounded-t-lg"
-            style={{
-              color: activeTab === "sent" ? 'var(--accent-indigo)' : '#BDBDBD',
-              fontWeight: activeTab === "sent" ? 600 : 400,
-              backgroundColor: activeTab === "sent" ? 'var(--section-bg)' : 'transparent',
-            }}
+          {/* Sent Folder */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            onClick={() => setSelectedFolder("sent")}
+            className="cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label={`Sent requests folder - ${mockSentRequests.length} requests`}
           >
-            <Send className="w-4 h-4" />
-            <span className="text-sm">Sent</span>
-            {sentRequests.length > 0 && (
-              <span 
-                className="px-2 py-0.5 rounded-full text-xs min-w-[20px] text-center font-semibold"
-                style={{
-                  backgroundColor: '#6C63FF',
-                  color: 'white',
-                }}
-              >
-                {sentRequests.length}
-              </span>
-            )}
-            {activeTab === "sent" && (
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-0.5" 
-                style={{ backgroundColor: 'var(--accent-indigo)' }}
-              />
-            )}
-          </button>
+            <GlassFolder icon={<span className="text-5xl">📤</span>} />
+            <p
+              className="text-center mt-4 text-[18px]"
+              style={{ color: "var(--text-primary)", fontWeight: 600 }}
+            >
+              Sent ({mockSentRequests.length})
+            </p>
+          </motion.div>
 
-          <button
-            onClick={() => setActiveTab("history")}
-            className="pb-4 px-4 relative transition-all duration-200 flex items-center gap-2 rounded-t-lg"
-            style={{
-              color: activeTab === "history" ? 'var(--accent-indigo)' : '#BDBDBD',
-              fontWeight: activeTab === "history" ? 600 : 400,
-              backgroundColor: activeTab === "history" ? 'var(--section-bg)' : 'transparent',
-            }}
+          {/* Logs Folder */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            onClick={() => setSelectedFolder("logs")}
+            className="cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label={`Request history folder - ${mockLogs.length} records`}
           >
-            <History className="w-4 h-4" />
-            <span className="text-sm">History</span>
-            {activeTab === "history" && (
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-0.5" 
-                style={{ backgroundColor: 'var(--accent-indigo)' }}
-              />
-            )}
-          </button>
+            <GlassFolder icon={<span className="text-5xl">📋</span>} />
+            <p
+              className="text-center mt-4 text-[18px]"
+              style={{ color: "var(--text-primary)", fontWeight: 600 }}
+            >
+              History ({mockLogs.length})
+            </p>
+          </motion.div>
         </div>
       </div>
 
-      {/* Cards Grid - Consistent with Dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        {isLoading ? (
-          <div className="col-span-full flex items-center justify-center py-20">
-            <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
-          </div>
-        ) : error ? (
-          <div className="col-span-full p-12 text-center rounded-2xl border" style={{ backgroundColor: 'var(--section-bg)', borderColor: 'var(--border)' }}>
-            <p className="text-red-400 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        ) : activeTab === "incoming" && (
+      {/* Slide-in Modal from Left with Stitches */}
+      <AnimatePresence>
+        {selectedFolder && (
           <>
-            {incomingRequests.length > 0 ? (
-              <>
-                {incomingRequests.slice(0, displayedIncoming).map((request, index) => (
-                  <div
-                    key={request.id}
-                    className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-                    style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
-                  >
-                    <RequestCard
-                      user={{
-                        name: request.sender?.name || 'Unknown',
-                        avatar: request.sender?.avatar,
-                        offeredSkills: (request.sender?.offeredSkills || []).map((s: {name: string}) => s.name),
-                        wantedSkills: (request.sender?.wantedSkills || []).map((s: {name: string}) => s.name),
-                        timestamp: request.created_at,
-                      }}
-                      type="incoming"
-                      onAccept={() => handleAccept(request.id)}
-                      onReject={() => handleRejectClick(request.id)}
-                    />
-                  </div>
-                ))}
-                {displayedIncoming < incomingRequests.length && (
-                  <div ref={loadMoreIncomingRef} className="col-span-full flex justify-center py-8">
-                    {loadingMoreIncoming ? (
-                      <div 
-                        className="flex items-center gap-3 px-6 py-3 rounded-full"
-                        style={{ backgroundColor: 'var(--section-bg)' }}
-                      >
-                        <div 
-                          className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent"
-                          style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
-                        />
-                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                          Loading more requests...
-                        </span>
-                      </div>
-                    ) : (
-                      <div 
-                        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm cursor-pointer transition-all hover:shadow-md"
-                        style={{ 
-                          backgroundColor: 'var(--card)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border)',
-                        }}
-                      >
-                        <ChevronDown className="w-4 h-4 animate-bounce" />
-                        Scroll for more
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div
-                className="col-span-full p-12 md:p-16 text-center rounded-2xl border"
-                style={{ 
-                  backgroundColor: 'var(--section-bg)',
-                  borderColor: 'var(--border)',
-                }}
-              >
-                <div 
-                  className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: 'var(--card)' }}
-                >
-                  <Inbox className="w-10 h-10" style={{ color: 'var(--text-disabled)' }} />
-                </div>
-                <p
-                  className="text-lg md:text-xl mb-2"
-                  style={{ color: 'var(--text-primary)', fontWeight: 600 }}
-                >
-                  No incoming requests
-                </p>
-                <p
-                  className="text-sm md:text-base max-w-md mx-auto"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  When someone sends you a match request, it will appear here
-                </p>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === "sent" && (
-          <>
-            {sentRequests.length > 0 ? (
-              <>
-                {sentRequests.slice(0, displayedSent).map((request, index) => (
-                  <div
-                    key={request.id}
-                    className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-                    style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
-                  >
-                    <RequestCard
-                      user={{
-                        name: request.receiver?.name || 'Unknown',
-                        avatar: request.receiver?.avatar,
-                        offeredSkills: (request.receiver?.offeredSkills || []).map((s: {name: string}) => s.name),
-                        wantedSkills: (request.receiver?.wantedSkills || []).map((s: {name: string}) => s.name),
-                        timestamp: request.created_at,
-                      }}
-                      type="sent"
-                    />
-                  </div>
-                ))}
-                {displayedSent < sentRequests.length && (
-                  <div ref={loadMoreSentRef} className="col-span-full flex justify-center py-8">
-                    {loadingMoreSent ? (
-                      <div 
-                        className="flex items-center gap-3 px-6 py-3 rounded-full"
-                        style={{ backgroundColor: 'var(--section-bg)' }}
-                      >
-                        <div 
-                          className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent"
-                          style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
-                        />
-                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                          Loading more requests...
-                        </span>
-                      </div>
-                    ) : (
-                      <div 
-                        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm cursor-pointer transition-all hover:shadow-md"
-                        style={{ 
-                          backgroundColor: 'var(--card)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border)',
-                        }}
-                      >
-                        <ChevronDown className="w-4 h-4 animate-bounce" />
-                        Scroll for more
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div
-                className="col-span-full p-12 md:p-16 text-center rounded-2xl border"
-                style={{ 
-                  backgroundColor: 'var(--section-bg)',
-                  borderColor: 'var(--border)',
-                }}
-              >
-                <div 
-                  className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: 'var(--card)' }}
-                >
-                  <Send className="w-10 h-10" style={{ color: 'var(--text-disabled)' }} />
-                </div>
-                <p
-                  className="text-lg md:text-xl mb-2"
-                  style={{ color: 'var(--text-primary)', fontWeight: 600 }}
-                >
-                  No sent requests
-                </p>
-                <p
-                  className="text-sm md:text-base max-w-md mx-auto"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  Find matches on the dashboard and send them a request
-                </p>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Reject Confirm Modal */}
-      <ConfirmModal
-        isOpen={showRejectConfirm && !showDeclineReason}
-        onClose={() => setShowRejectConfirm(false)}
-        onConfirm={() => setShowDeclineReason(true)}
-        title="Decline Request"
-        message="Are you sure you want to decline this request?"
-        confirmText="Add Reason"
-        cancelText="Cancel"
-        variant="warning"
-      />
-
-      {/* Decline Reason Modal */}
-      {showDeclineReason && (
-        <div 
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => {
-            setShowDeclineReason(false);
-            setShowRejectConfirm(false);
-            setDeclineReason("");
-          }}
-        >
-          <div 
-            className="w-full max-w-[420px] rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 fade-in duration-200"
-            style={{ backgroundColor: 'var(--card)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 
-              className="text-[20px] mb-4"
-              style={{ color: '#E0E0E0', fontWeight: 600 }}
-            >
-              Decline Reason (Optional)
-            </h3>
-            <textarea
-              value={declineReason}
-              onChange={(e) => setDeclineReason(e.target.value)}
-              placeholder="e.g., Schedule conflict, Not interested, etc."
-              className="w-full px-3 py-2 rounded-lg border text-sm mb-4"
-              style={{
-                backgroundColor: 'var(--section-bg)',
-                borderColor: '#2D2D2D',
-                color: '#E0E0E0',
-                minHeight: '100px',
-              }}
+            {/* Blur Veil */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 backdrop-blur-md"
+              style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}
+              onClick={() => setSelectedFolder(null)}
             />
-            <div className="flex gap-3">
+
+            {/* Modal with Stitches */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 bottom-0 w-[500px] z-50 overflow-hidden"
+              style={{
+                backgroundColor: "var(--card)",
+                borderRight: "4px solid var(--primary)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Stitches Effect */}
+              <div className="absolute right-0 top-0 bottom-0 w-[20px] flex flex-col justify-around items-center py-4">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      backgroundColor: "var(--primary)",
+                      boxShadow: "0 0 10px var(--primary)",
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Close Button */}
               <button
-                onClick={() => {
-                  setShowDeclineReason(false);
-                  setShowRejectConfirm(false);
-                  setDeclineReason("");
-                }}
-                className="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all"
-                style={{ 
-                  backgroundColor: 'var(--secondary)', 
-                  color: '#BDBDBD',
-                  border: '1px solid #2D2D2D',
+                onClick={() => setSelectedFolder(null)}
+                className="absolute top-6 right-8 p-2 rounded-full transition-all hover:scale-110 z-10"
+                aria-label="Close requests panel"
+                style={{
+                  backgroundColor: "var(--secondary)",
+                  color: "var(--text-primary)",
                 }}
               >
-                Cancel
+                <X className="w-6 h-6" />
               </button>
-              <button
-                onClick={handleRejectConfirm}
-                className="flex-1 py-2.5 px-4 rounded-lg font-medium transition-all"
-                style={{ 
-                  backgroundColor: 'var(--accent-indigo)', 
-                  color: 'white',
-                }}
-              >
-                Decline
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+              {/* Modal Content */}
+              <div className="h-full overflow-y-auto p-8 pr-12">
+                <h3
+                  className="text-[28px] mb-6"
+                  style={{ color: "var(--text-primary)", fontWeight: 700 }}
+                >
+                  {selectedFolder === "received" && "Received Requests"}
+                  {selectedFolder === "sent" && "Sent Requests"}
+                  {selectedFolder === "logs" && "Request History"}
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Received Requests */}
+                  {selectedFolder === "received" &&
+                    (incomingRequests.length > 0 ? (
+                      incomingRequests.map((request, index) => (
+                        <motion.div
+                          key={request.id}
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="p-4 rounded-xl border-2"
+                          style={{
+                            backgroundColor: "var(--section-bg)",
+                            borderColor: "var(--border)",
+                          }}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                              <ImageWithFallback
+                                src={request.avatar}
+                                alt={request.name}
+                                className="w-full h-full object-cover"
+                                width={64}
+                                height={64}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4
+                                className="text-[18px] mb-1"
+                                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+                              >
+                                {request.name}
+                              </h4>
+                              <p
+                                className="text-[12px] mb-3"
+                                style={{ color: "var(--text-secondary)" }}
+                              >
+                                Can teach: {request.offeredSkills.join(", ")}
+                              </p>
+                              <p
+                                className="text-[12px] mb-4"
+                                style={{ color: "var(--text-secondary)" }}
+                              >
+                                Wants: {request.wantedSkills.join(", ")}
+                              </p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleAccept(request.id)}
+                                  className="flex-1 px-4 py-2 rounded-lg font-medium transition-all hover:scale-105"
+                                  aria-label={`Accept request from ${request.name}`}
+                                  style={{
+                                    backgroundColor: "var(--primary)",
+                                    color: "var(--background)",
+                                  }}
+                                >
+                                  <Check className="w-4 h-4 inline mr-2" />
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() => handleReject(request.id)}
+                                  className="flex-1 px-4 py-2 rounded-lg font-medium border-2 transition-all hover:scale-105"
+                                  aria-label={`Decline request from ${request.name}`}
+                                  style={{
+                                    borderColor: "var(--destructive)",
+                                    color: "var(--destructive)",
+                                  }}
+                                >
+                                  <X className="w-4 h-4 inline mr-2" />
+                                  Decline
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12">
+                        <p style={{ color: "var(--text-secondary)" }}>No received requests</p>
+                      </div>
+                    ))}
+
+                  {/* Sent Requests */}
+                  {selectedFolder === "sent" &&
+                    (mockSentRequests.length > 0 ? (
+                      mockSentRequests.map((request, index) => (
+                        <motion.div
+                          key={request.id}
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="p-4 rounded-xl border-2"
+                          style={{
+                            backgroundColor: "var(--section-bg)",
+                            borderColor: "var(--border)",
+                          }}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                              <ImageWithFallback
+                                src={request.avatar}
+                                alt={request.name}
+                                className="w-full h-full object-cover"
+                                width={64}
+                                height={64}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4
+                                className="text-[18px] mb-1"
+                                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+                              >
+                                {request.name}
+                              </h4>
+                              <p
+                                className="text-[12px] mb-3"
+                                style={{ color: "var(--text-secondary)" }}
+                              >
+                                Can teach: {request.offeredSkills.join(", ")}
+                              </p>
+                              <div className="flex items-center gap-2 mt-3">
+                                <Clock className="w-4 h-4" style={{ color: "var(--warning)" }} />
+                                <span
+                                  className="text-[12px]"
+                                  style={{ color: "var(--warning)" }}
+                                >
+                                  Pending...
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12">
+                        <p style={{ color: "var(--text-secondary)" }}>No sent requests</p>
+                      </div>
+                    ))}
+
+                  {/* History/Logs */}
+                  {selectedFolder === "logs" &&
+                    mockLogs.map((log, index) => (
+                      <motion.div
+                        key={log.id}
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="p-4 rounded-xl border-2"
+                        style={{
+                          backgroundColor: "var(--section-bg)",
+                          borderColor: "var(--border)",
+                        }}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                            <ImageWithFallback
+                              src={log.avatar}
+                              alt={log.name}
+                              className="w-full h-full object-cover"
+                              width={48}
+                              height={48}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <h4
+                              className="text-[16px] mb-1"
+                              style={{ color: "var(--text-primary)", fontWeight: 600 }}
+                            >
+                              {log.name}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="text-[12px] px-3 py-1 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    log.status === "success"
+                                      ? "var(--success)"
+                                      : log.status === "error"
+                                      ? "var(--destructive)"
+                                      : "var(--warning)",
+                                  color: "white",
+                                }}
+                              >
+                                {log.action}
+                              </span>
+                              <span
+                                className="text-[12px]"
+                                style={{ color: "var(--text-secondary)" }}
+                              >
+                                {log.date}
+                              </span>
+                            </div>
+                          </div>
+                          <Archive className="w-5 h-5" style={{ color: "var(--text-disabled)" }} />
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

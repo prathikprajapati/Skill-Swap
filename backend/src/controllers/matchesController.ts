@@ -2,6 +2,8 @@ import type { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
 import type { AuthRequest } from "../types/auth";
+import { activeUser } from "../utils/filters";
+import { getPagination, paginate, defaultOrderBy } from "../utils/pagination";
 
 const prisma = new PrismaClient();
 
@@ -56,10 +58,12 @@ export const getRecommendedMatches = async (
     const excludedUserIds = [...matchedUserIds, ...requestedUserIds, userId];
 
     // Find users who have skills we want and want skills we offer
+    // Apply soft delete filter to exclude deleted users
     const potentialMatches = await prisma.user.findMany({
       where: {
         AND: [
           { id: { notIn: excludedUserIds } },
+          activeUser, // Exclude deleted users
           {
             OR: [
               // Users who offer skills we want
@@ -160,6 +164,145 @@ export const getRecommendedMatches = async (
     res.json(sortedMatches);
   } catch (error) {
     console.error("Get recommended matches error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getMyMatches = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { page, limit, skip } = getPagination(req.query);
+
+    // Get all accepted matches for the current user with pagination
+    const [matches, total] = await Promise.all([
+      prisma.match.findMany({
+        where: {
+          OR: [{ user1_id: userId }, { user2_id: userId }],
+        },
+        include: {
+          user1: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              user_skills: {
+                where: { skill_type: "offer" },
+                include: { skill: true },
+              },
+            },
+          },
+          user2: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              user_skills: {
+                where: { skill_type: "offer" },
+                include: { skill: true },
+              },
+            },
+          },
+          messages: {
+            orderBy: { created_at: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: defaultOrderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.match.count({
+        where: {
+          OR: [{ user1_id: userId }, { user2_id: userId }],
+        },
+      }),
+    ]);
+
+    // Format the response
+    const formattedMatches = matches.map((match) => {
+      const otherUser = match.user1_id === userId ? match.user2 : match.user1;
+      const lastMessage = match.messages[0];
+
+      return {
+        id: match.id,
+        user1_id: match.user1_id,
+        user2_id: match.user2_id,
+        status: match.status,
+        created_at: match.created_at,
+        otherUser: {
+          id: otherUser.id,
+          name: otherUser.name,
+          avatar: otherUser.avatar,
+          offeredSkills: otherUser.user_skills.map((us) => us.skill.name),
+          wantedSkills: [],
+        },
+        lastMessage: lastMessage
+          ? {
+              content: lastMessage.content,
+              created_at: lastMessage.created_at,
+              is_read: lastMessage.is_read,
+            }
+          : undefined,
+      };
+    });
+
+    res.json(paginate(formattedMatches, total, req.query));
+  } catch (error) {
+    console.error("Get my matches error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * PATCH /matches/:id - Update match status (archive/unmatch)
+ * Use PATCH, NOT DELETE - updates status to 'archived', not hard delete
+ */
+export const updateMatchStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { id } = req.params as { id: string };
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ["active", "completed", "cancelled", "archived"];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    // Find the match and verify user is part of it
+    const match = await prisma.match.findFirst({
+      where: {
+        id,
+        OR: [{ user1_id: userId }, { user2_id: userId }],
+      },
+    });
+
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
+
+    // Update match status
+    const updatedMatch = await prisma.match.update({
+      where: { id },
+      data: { status: status as any },
+    });
+
+    res.json({
+      message: `Match ${status === "archived" ? "archived" : "updated"} successfully`,
+      match: updatedMatch,
+    });
+  } catch (error) {
+    console.error("Update match status error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

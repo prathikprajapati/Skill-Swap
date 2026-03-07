@@ -3,6 +3,10 @@ import { validationResult } from "express-validator";
 import { PrismaClient, SkillType } from "@prisma/client";
 
 import type { AuthRequest } from "../types/auth";
+import {
+  processAchievementTrigger,
+  AchievementTriggers,
+} from "../services/achievementService";
 
 const prisma = new PrismaClient();
 
@@ -68,6 +72,9 @@ export const addUserSkill = async (req: AuthRequest, res: Response) => {
         skill: true,
       },
     });
+
+    // Trigger achievement check (fire-and-forget)
+    processAchievementTrigger(AchievementTriggers.AFTER_SKILL_ADDED, userId);
 
     res.status(201).json(userSkill);
   } catch (error) {

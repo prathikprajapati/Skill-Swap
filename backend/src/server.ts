@@ -11,6 +11,8 @@ import matchesRoutes, { messagesRouter } from "./routes/matches";
 import requestsRoutes from "./routes/requests";
 import messagesRoutes from "./routes/messages";
 import gamificationRoutes from "./routes/gamification";
+import ratingsRoutes from "./routes/ratings";
+import notificationsRoutes from "./routes/notifications";
 
 import { initializeSocket } from "./socket";
 
@@ -63,10 +65,20 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Don't count successful requests
 });
 
-// CORS middleware
+// CORS middleware - Allow all localhost ports for development
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176",
+      "http://localhost:5177",
+    ];
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -110,12 +122,15 @@ app.get("/health", (req, res) => {
 app.use("/auth", authLimiter, authRoutes);
 
 // Routes - Order matters! More specific routes first
+app.use(skillsRoutes);
 app.use("/users", userRoutes);
-app.use("/skills", skillsRoutes);
 app.use("/matches", matchesRoutes);
+
 app.use("/requests", requestsRoutes);
 app.use("/messages", messagesRouter);
 app.use("/gamification", gamificationRoutes);
+app.use("/ratings", ratingsRoutes);
+app.use("/notifications", notificationsRoutes);
 
 // Security: HTTPS enforcement for production
 if (process.env.NODE_ENV === "production") {

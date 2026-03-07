@@ -39,11 +39,11 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    // Generate JWT token
+    // Generate JWT token - Extended to 7 days for better UX
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET || "fallback-secret",
-      { expiresIn: "15m" },
+      { expiresIn: "7d" },
     );
 
     res.status(201).json({
@@ -85,11 +85,11 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Generate JWT token
+    // Generate JWT token - Extended to 7 days for better UX
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET || "fallback-secret",
-      { expiresIn: "15m" },
+      { expiresIn: "7d" },
     );
 
     res.json({

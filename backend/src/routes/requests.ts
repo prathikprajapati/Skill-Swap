@@ -6,6 +6,7 @@ import {
   getSentRequests,
   acceptRequest,
   rejectRequest,
+  cancelRequest,
 } from "../controllers/requestsController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -28,5 +29,8 @@ router.put("/:id/accept", [param("id").isUUID()], acceptRequest);
 
 // PUT /requests/:id/reject - Reject request
 router.put("/:id/reject", [param("id").isUUID()], rejectRequest);
+
+// PATCH /requests/:id - Cancel a pending request (sender only)
+router.patch("/:id", [param("id").isUUID()], cancelRequest);
 
 export default router;

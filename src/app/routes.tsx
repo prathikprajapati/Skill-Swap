@@ -1,22 +1,48 @@
-import { createBrowserRouter, Outlet } from "react-router";
+import { createBrowserRouter } from "react-router";
+import { lazy, Suspense } from "react";
 import { Layout } from "@/app/components/Layout";
 import { ProtectedRoute } from "@/app/components/ProtectedRoute";
-import { AuthPage } from "@/app/pages/AuthPage";
-import { LandingPage } from "@/app/pages/LandingPage";
-import { DashboardPage } from "@/app/pages/DashboardPage";
-import { ProfilePage } from "@/app/pages/ProfilePage";
-import { RequestsPage } from "@/app/pages/RequestsPage";
-import { ChatPage } from "@/app/pages/ChatPage";
-import { OnboardingPage } from "@/app/pages/OnboardingPage";
+
+// Lazy load pages for better performance (code splitting)
+const AuthPage = lazy(() => import("@/app/pages/AuthPage").then(m => ({ default: m.AuthPage })));
+const LandingPage = lazy(() => import("@/app/pages/LandingPage").then(m => ({ default: m.LandingPage })));
+const DashboardPage = lazy(() => import("@/app/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
+const ProfilePage = lazy(() => import("@/app/pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const RequestsPage = lazy(() => import("@/app/pages/RequestsPage").then(m => ({ default: m.RequestsPage })));
+const ChatPage = lazy(() => import("@/app/pages/ChatPage").then(m => ({ default: m.ChatPage })));
+const OnboardingPage = lazy(() => import("@/app/pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
+
+// Loading fallback component
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex flex-col items-center gap-4">
+        <div 
+          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
+          style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }}
+        />
+        <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: LandingPage,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <LandingPage />
+      </Suspense>
+    ),
   },
   {
     path: "/auth",
-    Component: AuthPage,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AuthPage />
+      </Suspense>
+    ),
   },
   {
     path: "/app",
@@ -28,23 +54,43 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        Component: DashboardPage,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <DashboardPage />
+          </Suspense>
+        ),
       },
       {
         path: "profile",
-        Component: ProfilePage,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ProfilePage />
+          </Suspense>
+        ),
       },
       {
         path: "requests",
-        Component: RequestsPage,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RequestsPage />
+          </Suspense>
+        ),
       },
       {
         path: "chat",
-        Component: ChatPage,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ChatPage />
+          </Suspense>
+        ),
       },
       {
         path: "onboarding",
-        Component: OnboardingPage,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <OnboardingPage />
+          </Suspense>
+        ),
       },
     ],
   },

@@ -1,10 +1,11 @@
 import type { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import type { AuthRequest } from "../types/auth";
+import { getPagination, paginate, defaultOrderBy } from "../utils/pagination";
 
 const prisma = new PrismaClient();
 
-// XP values for different actions
+// XP values for different actions (INTERNAL ONLY - awarded automatically)
 const XP_VALUES = {
   ADD_SKILL: 50,
   COMPLETE_SESSION: 100,
@@ -14,6 +15,15 @@ const XP_VALUES = {
   TEACH_SKILL: 30, // per skill taught
   LEARN_SKILL: 25, // per skill learned
 };
+
+// Whitelist of allowed XP actions (internal system actions only)
+const ALLOWED_XP_ACTIONS = Object.keys(XP_VALUES);
+
+// Verify JWT_SECRET is defined (same pattern as auth middleware)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("CRITICAL: JWT_SECRET environment variable is not defined.");
+}
 
 // Level thresholds
 const LEVEL_THRESHOLDS = [
@@ -236,7 +246,7 @@ export const getUserStats = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Award XP to user
+// Award XP to user (INTERNAL ENDPOINT - validates whitelist)
 export const awardXP = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -246,10 +256,36 @@ export const awardXP = async (req: AuthRequest, res: Response) => {
 
     const { action, amount } = req.body;
 
-    // Validate action
-    const xpAmount = amount || XP_VALUES[action as keyof typeof XP_VALUES];
+    // Validate action against whitelist - only internal system actions allowed
+    // Users cannot manually award arbitrary XP actions
+    if (action && !ALLOWED_XP_ACTIONS.includes(action)) {
+      return res.status(400).json({
+        error: "Invalid action. Only system actions are allowed.",
+      });
+    }
+
+    // Validate: either action must be in whitelist OR custom amount provided
+    const xpAmount =
+      amount ||
+      (action ? XP_VALUES[action as keyof typeof XP_VALUES] : undefined);
     if (!xpAmount) {
       return res.status(400).json({ error: "Invalid action or amount" });
+    }
+
+    // Optional: Rate limiting - prevent abuse
+    // Count recent XP transactions (last 1 hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentTransactions = await prisma.xPTransaction.count({
+      where: {
+        user_id: userId,
+        created_at: { gte: oneHourAgo },
+      },
+    });
+
+    if (recentTransactions > 20) {
+      return res.status(429).json({
+        error: "Too many XP awards. Please try again later.",
+      });
     }
 
     // Get current XP before update
@@ -308,13 +344,19 @@ export const getXPHistory = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const transactions = await prisma.xPTransaction.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-      take: 50, // Last 50 transactions
-    });
+    const { page, limit, skip } = getPagination(req.query);
 
-    res.json(transactions);
+    const [transactions, total] = await Promise.all([
+      prisma.xPTransaction.findMany({
+        where: { user_id: userId },
+        orderBy: defaultOrderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.xPTransaction.count({ where: { user_id: userId } }),
+    ]);
+
+    res.json(paginate(transactions, total, req.query));
   } catch (error) {
     console.error("Get XP history error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -469,15 +511,14 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
 // Helper functions
 function getLevelInfo(xp: number) {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (xp >= LEVEL_THRESHOLDS[i].minXP) {
+    const threshold = LEVEL_THRESHOLDS[i];
+    if (threshold && xp >= threshold.minXP) {
       const nextLevel = LEVEL_THRESHOLDS[i + 1];
       return {
-        ...LEVEL_THRESHOLDS[i],
+        ...threshold,
         nextLevelXP: nextLevel?.minXP || null,
         progress: nextLevel
-          ? ((xp - LEVEL_THRESHOLDS[i].minXP) /
-              (nextLevel.minXP - LEVEL_THRESHOLDS[i].minXP)) *
-            100
+          ? ((xp - threshold.minXP) / (nextLevel.minXP - threshold.minXP)) * 100
           : 100,
       };
     }

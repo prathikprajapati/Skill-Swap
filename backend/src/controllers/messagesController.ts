@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { validationResult } from "express-validator";
 import { PrismaClient } from "@prisma/client";
 import type { AuthRequest } from "../types/auth";
+import { getPagination, paginate, defaultOrderBy } from "../utils/pagination";
 
 const prisma = new PrismaClient();
 
@@ -13,6 +14,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     }
 
     const matchId = req.params.id as string;
+    const { page, limit, skip } = getPagination(req.query);
 
     // Check if match exists
     const match = await prisma.match.findUnique({
@@ -28,17 +30,25 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const messages = await prisma.message.findMany({
-      where: { match_id: matchId },
-      include: {
-        sender: {
-          select: { id: true, name: true, avatar: true },
+    // Get messages with pagination and count
+    const [messages, total] = await Promise.all([
+      prisma.message.findMany({
+        where: { match_id: matchId },
+        include: {
+          sender: {
+            select: { id: true, name: true, avatar: true },
+          },
         },
-      },
-      orderBy: { created_at: "asc" },
-    });
+        orderBy: { created_at: "asc" },
+        skip,
+        take: limit,
+      }),
+      prisma.message.count({
+        where: { match_id: matchId },
+      }),
+    ]);
 
-    res.json(messages);
+    res.json(paginate(messages, total, req.query));
   } catch (error) {
     console.error("Get messages error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -126,6 +136,43 @@ export const markMessageAsRead = async (req: AuthRequest, res: Response) => {
     res.json({ message: "Message marked as read" });
   } catch (error) {
     console.error("Mark message as read error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * DELETE /messages/:id - Delete a message (sender only)
+ */
+export const deleteMessage = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const messageId = req.params.id as string;
+
+    // Find the message and verify the user is the sender
+    const message = await prisma.message.findFirst({
+      where: {
+        id: messageId,
+        sender_id: userId,
+      },
+    });
+
+    if (!message) {
+      return res
+        .status(404)
+        .json({ error: "Message not found or not authorized" });
+    }
+
+    await prisma.message.delete({
+      where: { id: messageId },
+    });
+
+    res.json({ message: "Message deleted successfully" });
+  } catch (error) {
+    console.error("Delete message error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
