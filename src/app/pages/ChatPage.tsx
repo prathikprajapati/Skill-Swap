@@ -1,576 +1,305 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Button } from "@/app/components/ui/skill-swap-button";
-import { Send, Paperclip, Calendar, Clock, Check, CheckCheck, MoreVertical, Phone, Video, ChevronLeft, Loader2, Wifi, WifiOff } from "lucide-react";
-import { useToast } from "@/app/components/ui/Toast";
-import { matchesApi, type Match } from "@/app/api/matches";
-import { messagesApi, type Message } from "@/app/api/messages";
-import { useAuth } from "@/app/contexts/AuthContext";
-import { useSocket } from "@/app/hooks/useSocket";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { 
+  Search, 
+  MoreVertical, 
+  Phone, 
+  Video, 
+  Send, 
+  Paperclip,
+  Smile,
+  Check,
+  CheckCheck,
+  ArrowLeft
+} from "lucide-react";
 
-export function ChatPage() {
-  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+/* ── Mock Conversations Data ── */
+const CONVERSATIONS = [
+  {
+    id: "1",
+    user: {
+      name: "Emma Chen",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+      lastMessage: "Sure! Let's schedule a call tomorrow",
+      isOnline: true,
+    },
+    unread: 2,
+    lastActive: "2 min ago",
+  },
+  {
+    id: "2",
+    user: {
+      name: "David Kim",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      lastMessage: "Thanks for the React tips!",
+      isOnline: false,
+    },
+    unread: 0,
+    lastActive: "1 hour ago",
+  },
+  {
+    id: "3",
+    user: {
+      name: "Sarah Johnson",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+      lastMessage: "The design looks amazing! 🔥",
+      isOnline: true,
+    },
+    unread: 0,
+    lastActive: "3 hours ago",
+  },
+  {
+    id: "4",
+    user: {
+      name: "James Wilson",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+      lastMessage: "Can you help me with TypeScript?",
+      isOnline: false,
+    },
+    unread: 1,
+    lastActive: "1 day ago",
+  },
+];
+
+/* ── Mock Messages Data ── */
+const MOCK_MESSAGES = [
+  { id: "1", senderId: "other", text: "Hey! How's your React learning going?", timestamp: "10:30 AM", status: "read" },
+  { id: "2", senderId: "me", text: "Going great! Just finished the hooks chapter", timestamp: "10:32 AM", status: "read" },
+  { id: "3", senderId: "other", text: "Awesome! Have you tried building any small projects?", timestamp: "10:33 AM", status: "read" },
+  { id: "4", senderId: "me", text: "Yes! I'm working on a todo app right now", timestamp: "10:35 AM", status: "read" },
+  { id: "5", senderId: "me", text: "Would love to get your feedback on it soon", timestamp: "10:35 AM", status: "delivered" },
+  { id: "6", senderId: "other", text: "Definitely! Share it whenever you're ready", timestamp: "10:40 AM", status: "read" },
+  { id: "7", senderId: "other", text: "Sure! Let's schedule a call tomorrow", timestamp: "10:45 AM", status: "read" },
+];
+
+/* ── Message Component ── */
+function Message({ message, isOwn }: { message: typeof MOCK_MESSAGES[0]; isOwn: boolean }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-3`}
+    >
+      <div
+        className={`max-w-[70%] px-4 py-2.5 rounded-2xl ${
+          isOwn 
+            ? 'bg-white text-neutral-900 rounded-br-md' 
+            : 'bg-neutral-800 text-white rounded-bl-md'
+        }`}
+      >
+        <p className="text-sm">{message.text}</p>
+        <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : ''}`}>
+          <span className={`text-xs ${isOwn ? 'text-neutral-500' : 'text-neutral-400'}`}>
+            {message.timestamp}
+          </span>
+          {isOwn && (
+            message.status === 'read' ? (
+              <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+            ) : (
+              <Check className="w-3.5 h-3.5 text-neutral-400" />
+            )
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Conversation Item Component ── */
+function ConversationItem({ 
+  conversation, 
+  isActive,
+  onClick 
+}: { 
+  conversation: typeof CONVERSATIONS[0]; 
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
+        isActive ? 'bg-neutral-800' : 'hover:bg-neutral-800/50'
+      }`}
+    >
+      <div className="relative">
+        <Avatar className="w-12 h-12">
+          <AvatarImage src={conversation.user.avatar} alt={conversation.user.name} />
+          <AvatarFallback>
+            {conversation.user.name.split(" ").map((n: string) => n[0]).join("")}
+          </AvatarFallback>
+        </Avatar>
+        {conversation.user.isOnline && (
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-900 rounded-full" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-white truncate">{conversation.user.name}</h3>
+          <span className="text-xs text-neutral-500">{conversation.lastActive}</span>
+        </div>
+        <p className="text-sm text-neutral-400 truncate">{conversation.user.lastMessage}</p>
+      </div>
+      {conversation.unread > 0 && (
+        <span className="w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          {conversation.unread}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/* ── Main Chat Page ── */
+export default function ChatPage() {
+  const [selectedId, setSelectedId] = useState<string | null>("1");
   const [messageInput, setMessageInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [otherUserOnline, setOtherUserOnline] = useState(false);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [messages, setMessages] = useState(MOCK_MESSAGES);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { showToast } = useToast();
-  const { user } = useAuth();
-  const { socket, isConnected, joinMatch, leaveMatch, sendMessage, sendTyping, markMessageAsRead } = useSocket();
 
-  const selectedMatch = matches.find((m) => m.id === selectedMatchId) || matches[0];
-  const otherUser = selectedMatch?.otherUser;
+  const selectedConversation = CONVERSATIONS.find(c => c.id === selectedId);
 
-  // Fetch matches on mount
-  useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        setIsLoading(true);
-        const data = await matchesApi.getMyMatches();
-        setMatches(data);
-        if (data.length > 0 && !selectedMatchId) {
-          setSelectedMatchId(data[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to fetch matches:", err);
-        showToast("error", "Failed to load matches");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMatches();
-  }, []);
-
-  // Fetch messages when selected match changes
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedMatchId) return;
-      
-      try {
-        const data = await messagesApi.getByMatchId(selectedMatchId);
-        setMessages(data);
-        
-        // Mark unread messages as read
-        data.forEach((msg) => {
-          if (!msg.is_read && msg.sender_id !== user?.id) {
-            markMessageAsRead(msg.id, selectedMatchId);
-          }
-        });
-      } catch (err) {
-        console.error("Failed to fetch messages:", err);
-      }
-    };
-
-    fetchMessages();
-  }, [selectedMatchId, user?.id, markMessageAsRead]);
-
-  // Join match room when selected match changes
-  useEffect(() => {
-    if (!selectedMatchId || !socket) return;
-
-    joinMatch(selectedMatchId);
-
-    // Set up WebSocket event listeners
-    socket.on("new_message", (message: Message) => {
-      setMessages((prev) => {
-        // Check if message already exists
-        if (prev.find((m) => m.id === message.id)) return prev;
-        return [...prev, message];
-      });
-      
-      // Mark message as read if from other user
-      if (message.sender_id !== user?.id) {
-        markMessageAsRead(message.id, selectedMatchId);
-      }
-    });
-
-    socket.on("message_sent", ({ messageId, tempId }: { messageId: string; tempId?: string }) => {
-      // Update temp message with real ID
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === tempId ? { ...msg, id: messageId } : msg
-        )
-      );
-    });
-
-    socket.on("message_read", ({ messageId }: { messageId: string }) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
-      );
-    });
-
-    socket.on("typing", ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
-      if (userId !== user?.id) {
-        setOtherUserTyping(isTyping);
-      }
-    });
-
-    socket.on("user_status", ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
-      if (userId === otherUser?.id) {
-        setOtherUserOnline(isOnline);
-      }
-    });
-
-    socket.on("user_joined", ({ userId }: { userId: string }) => {
-      if (userId === otherUser?.id) {
-        setOtherUserOnline(true);
-      }
-    });
-
-    socket.on("user_left", ({ userId }: { userId: string }) => {
-      if (userId === otherUser?.id) {
-        setOtherUserOnline(false);
-      }
-    });
-
-    socket.on("error", ({ message }: { message: string }) => {
-      console.error("Socket error:", message);
-      showToast("error", message);
-    });
-
-    return () => {
-      leaveMatch(selectedMatchId);
-      socket.off("new_message");
-      socket.off("message_sent");
-      socket.off("message_read");
-      socket.off("typing");
-      socket.off("user_status");
-      socket.off("user_joined");
-      socket.off("user_left");
-      socket.off("error");
-    };
-  }, [selectedMatchId, socket, joinMatch, leaveMatch, user?.id, otherUser?.id, markMessageAsRead, showToast]);
-
-  // Auto-scroll to bottom
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedMatchId) return;
-
-    const tempId = `temp-${Date.now()}`;
-    const content = messageInput.trim();
+  const handleSendMessage = () => {
+    if (!messageInput.trim()) return;
     
-    setIsSending(true);
-    
-    // Optimistically add message to UI
-    const tempMessage: Message = {
-      id: tempId,
-      match_id: selectedMatchId,
-      sender_id: user?.id || "",
-      content: content,
-      is_read: false,
-      created_at: new Date().toISOString(),
-      sender: {
-        id: user?.id || "",
-        name: user?.name || "",
-        avatar: user?.avatar || "",
-      },
+    const newMessage = {
+      id: String(messages.length + 1),
+      senderId: "me",
+      text: messageInput,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: "sent" as const,
     };
     
-    setMessages((prev) => [...prev, tempMessage]);
+    setMessages([...messages, newMessage]);
     setMessageInput("");
-    setIsTyping(false);
-
-    try {
-      if (isConnected && socket) {
-        // Send via WebSocket
-        sendMessage(selectedMatchId, content, tempId);
-      } else {
-        // Fallback to HTTP API
-        await messagesApi.send({
-          match_id: selectedMatchId,
-          content: content,
-        });
-        // Refresh messages
-        const updatedMessages = await messagesApi.getByMatchId(selectedMatchId);
-        setMessages(updatedMessages);
-      }
-    } catch (err) {
-      console.error("Failed to send message:", err);
-      showToast("error", "Failed to send message");
-      // Remove temp message on error
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-    } finally {
-      setIsSending(false);
-    }
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessageInput(e.target.value);
-    
-    // Send typing indicator
-    if (!isTyping && selectedMatchId && isConnected) {
-      setIsTyping(true);
-      sendTyping(selectedMatchId, true);
-    }
-    
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    // Stop typing after 2 seconds of inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      if (selectedMatchId && isConnected) {
-        sendTyping(selectedMatchId, false);
-      }
-    }, 2000);
-  };
-
-  const handleTemplateClick = (template: string) => {
-    setMessageInput(template);
-    setShowTemplates(false);
-  };
-
-  const messageTemplates = [
-    "When can we meet?",
-    "What time works for you?",
-    "I'm available this weekend",
-    "Can we schedule a session?",
-  ];
-
-  const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }).format(date);
-  };
-
-  const formatDate = (date: Date) => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-      }).format(date);
-    }
-  };
-
-  // Group messages by date
-  const groupedMessages = messages.reduce((groups, message) => {
-    const date = new Date(message.created_at).toDateString();
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(message);
-    return groups;
-  }, {} as Record<string, Message[]>);
-
-  if (isLoading) {
-    return (
-      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
-      </div>
-    );
-  }
-
-  if (matches.length === 0) {
-    return (
-      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl mb-4" style={{ color: 'var(--text-primary)' }}>No matches yet</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Start matching with people to begin chatting
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="h-[calc(100vh-120px)] flex gap-4">
-      {/* Sidebar - 20% width */}
-      <div 
-        className="w-[20%] min-w-[200px] rounded-2xl border flex flex-col overflow-hidden"
-        style={{ 
-          backgroundColor: 'var(--card)',
-          borderColor: '#2D2D2D',
-        }}
-      >
-        <div className="p-4 border-b" style={{ borderColor: '#2D2D2D' }}>
-          <h2 className="text-lg font-semibold" style={{ color: '#E0E0E0' }}>
-            Messages
-          </h2>
-          <p className="text-sm" style={{ color: '#BDBDBD' }}>
-            {matches.length} active conversation{matches.length !== 1 ? 's' : ''}
-          </p>
+    <div className="h-[calc(100vh-100px)] flex rounded-2xl overflow-hidden bg-neutral-900/50 border border-neutral-800">
+      {/* Left Sidebar - Conversations List */}
+      <div className={`${selectedId ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-neutral-800`}>
+        {/* Header */}
+        <div className="p-4 border-b border-neutral-800">
+          <h1 className="text-xl font-bold text-white mb-3">Messages</h1>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              className="w-full pl-10 pr-4 py-2 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-white/20"
+            />
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {matches.map((match) => (
-            <button
-              key={match.id}
-              onClick={() => setSelectedMatchId(match.id)}
-              className={`w-full p-3 flex items-center gap-3 transition-all text-left border-b ${
-                selectedMatchId === match.id ? "bg-[var(--section-bg)]" : "hover:bg-[var(--section-bg)]/50"
-              }`}
-              style={{ borderColor: '#2D2D2D' }}
-            >
-              <div className="relative">
-                <div
-                  className="w-10 h-10 rounded-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${match.otherUser?.avatar})` }}
-                />
-              </div>
-                <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate" style={{ color: '#E0E0E0' }}>
-                  {match.otherUser?.name || 'Unknown'}
-                </p>
-                <p className="text-xs truncate" style={{ color: '#757575' }}>
-                  Click to chat
-                </p>
-              </div>
-
-              {selectedMatchId === match.id && (
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-indigo)' }} />
-              )}
-            </button>
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {CONVERSATIONS.map((conversation) => (
+            <ConversationItem
+              key={conversation.id}
+              conversation={conversation}
+              isActive={selectedId === conversation.id}
+              onClick={() => setSelectedId(conversation.id)}
+            />
           ))}
         </div>
       </div>
 
-      {/* Chat Window - 80% width */}
-      <div 
-        className="flex-1 rounded-2xl border flex flex-col overflow-hidden"
-        style={{ 
-          backgroundColor: 'var(--card)',
-          borderColor: '#2D2D2D',
-        }}
-      >
-        {/* Chat Header */}
-        <div 
-          className="p-4 border-b flex items-center justify-between"
-          style={{ borderColor: '#2D2D2D' }}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${otherUser?.avatar})` }}
-            />
-            <div>
-              <h3 className="font-semibold" style={{ color: '#E0E0E0', fontWeight: 500 }}>
-                {otherUser?.name || 'Unknown'}
-              </h3>
-              <div className="flex items-center gap-2">
-                {otherUserOnline ? (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-xs text-green-500">Online</span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-gray-500" />
-                    <span className="text-xs text-gray-500">Offline</span>
-                  </>
-                )}
-                {!isConnected && (
-                  <span className="text-xs text-orange-500 flex items-center gap-1">
-                    <WifiOff className="w-3 h-3" />
-                    Reconnecting...
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-lg transition-colors hover:bg-[var(--section-bg)]"
-              onClick={() => showToast("info", "Session scheduling coming soon!")}
-            >
-              <Calendar className="w-5 h-5" style={{ color: '#BDBDBD' }} />
-            </button>
-            <button className="p-2 rounded-lg transition-colors hover:bg-[var(--section-bg)]">
-              <Phone className="w-5 h-5" style={{ color: '#BDBDBD' }} />
-            </button>
-            <button className="p-2 rounded-lg transition-colors hover:bg-[var(--section-bg)]">
-              <Video className="w-5 h-5" style={{ color: '#BDBDBD' }} />
-            </button>
-            <button className="p-2 rounded-lg transition-colors hover:bg-[var(--section-bg)]">
-              <MoreVertical className="w-5 h-5" style={{ color: '#BDBDBD' }} />
-            </button>
-          </div>
-        </div>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {Object.entries(groupedMessages).map(([date, dateMessages]) => (
-            <div key={date}>
-              {/* Date Divider */}
-              <div className="flex items-center justify-center my-4">
-                <div className="h-px flex-1" style={{ backgroundColor: '#2D2D2D' }} />
-                <span className="px-3 text-xs" style={{ color: '#757575' }}>
-                  {formatDate(new Date(date))}
-                </span>
-                <div className="h-px flex-1" style={{ backgroundColor: '#2D2D2D' }} />
-              </div>
-
-              {/* Messages for this date */}
-              <div className="space-y-3">
-                {dateMessages.map((message, index) => {
-                  const isMe = message.sender_id === user?.id;
-                  const showAvatar = !isMe && (index === 0 || dateMessages[index - 1].sender_id !== message.sender_id);
-
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                    >
-                      <div className={`flex items-end gap-2 max-w-[70%] ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                        {!isMe && showAvatar && (
-                          <div
-                            className="w-8 h-8 rounded-full bg-cover bg-center flex-shrink-0"
-                            style={{ backgroundImage: `url(${otherUser?.avatar})` }}
-                          />
-                        )}
-                        {!isMe && !showAvatar && <div className="w-8" />}
-
-                        <div
-                          className={`px-4 py-2.5 rounded-2xl ${
-                            isMe 
-                              ? "rounded-br-md" 
-                              : "rounded-bl-md"
-                          }`}
-                          style={{
-                            backgroundColor: isMe ? 'rgba(108, 99, 255, 0.15)' : '#2D2D2D',
-                            border: isMe ? '1px solid rgba(108, 99, 255, 0.3)' : '1px solid #3D3D3D',
-                          }}
-                        >
-                          <p style={{ color: '#E0E0E0', fontWeight: 400 }}>{message.content}</p>
-                          <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
-                            <span className="text-[10px]" style={{ color: '#757575' }}>
-                              {formatTime(new Date(message.created_at))}
-                            </span>
-                            {isMe && (
-                              <>
-                                {!message.is_read ? (
-                                  <Check className="w-3 h-3" style={{ color: '#757575' }} />
-                                ) : (
-                                  <CheckCheck className="w-3 h-3" style={{ color: '#3b82f6' }} />
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-          
-          {/* Typing Indicator */}
-          {otherUserTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl rounded-bl-md" style={{ backgroundColor: '#2D2D2D' }}>
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-                <span className="text-xs" style={{ color: '#757575' }}>{otherUser?.name} is typing...</span>
-              </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Message Templates */}
-        {showTemplates && (
-          <div 
-            className="px-4 py-2 border-t"
-            style={{ 
-              backgroundColor: 'var(--section-bg)',
-              borderColor: '#2D2D2D',
-            }}
-          >
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {messageTemplates.map((template) => (
-                <button
-                  key={template}
-                  onClick={() => handleTemplateClick(template)}
-                  className="px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors hover:opacity-80"
-                  style={{ 
-                    backgroundColor: 'rgba(108, 99, 255, 0.2)',
-                    color: '#6C63FF',
-                  }}
+      {/* Right Side - Chat Area */}
+      <div className={`${!selectedId ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setSelectedId(null)}
+                  className="md:hidden p-2 hover:bg-neutral-800 rounded-lg"
                 >
-                  {template}
+                  <ArrowLeft className="w-5 h-5 text-white" />
                 </button>
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={selectedConversation.user.avatar} alt={selectedConversation.user.name} />
+                  <AvatarFallback>
+                    {selectedConversation.user.name.split(" ").map((n: string) => n[0]).join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold text-white">{selectedConversation.user.name}</h3>
+                  <p className="text-xs text-green-400">
+                    {selectedConversation.user.isOnline ? 'Online' : 'Offline'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <Phone className="w-5 h-5 text-neutral-400" />
+                </button>
+                <button className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <Video className="w-5 h-5 text-neutral-400" />
+                </button>
+                <button className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <MoreVertical className="w-5 h-5 text-neutral-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {messages.map((message) => (
+                <Message 
+                  key={message.id} 
+                  message={message} 
+                  isOwn={message.senderId === "me"} 
+                />
               ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message Input */}
+            <div className="p-4 border-t border-neutral-800">
+              <div className="flex items-center gap-2">
+                <button className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <Paperclip className="w-5 h-5 text-neutral-400" />
+                </button>
+                <button className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <Smile className="w-5 h-5 text-neutral-400" />
+                </button>
+                <input
+                  type="text"
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+                <Button 
+                  onClick={handleSendMessage}
+                  className="bg-white text-neutral-900 hover:bg-neutral-100 rounded-xl px-4"
+                >
+                  <Send className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Send className="w-8 h-8 text-neutral-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Select a conversation</h3>
+              <p className="text-neutral-400">Choose a conversation from the sidebar to start chatting</p>
             </div>
           </div>
         )}
-
-        {/* Input Area */}
-        <div 
-          className="p-4 border-t"
-          style={{ borderColor: '#2D2D2D' }}
-        >
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-lg transition-colors hover:bg-[var(--section-bg)]"
-              onClick={() => showToast("info", "File attachment coming soon!")}
-            >
-              <Paperclip className="w-5 h-5" style={{ color: '#BDBDBD' }} />
-            </button>
-            <button 
-              className="p-2 rounded-lg transition-colors hover:bg-[var(--section-bg)]"
-              onClick={() => setShowTemplates(!showTemplates)}
-            >
-              <span className="text-sm" style={{ color: '#BDBDBD' }}>💬</span>
-            </button>
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={messageInput}
-                onChange={handleInputChange}
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                placeholder={`Plan your session with ${otherUser?.name || 'them'}...`}
-                className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-[var(--accent-indigo)]/30 transition-all"
-                style={{ 
-                  backgroundColor: 'var(--section-bg)',
-                  borderColor: '#2D2D2D',
-                  color: '#E0E0E0',
-                }}
-              />
-            </div>
-            <Button 
-              onClick={handleSendMessage} 
-              disabled={!messageInput.trim() || isSending}
-              size="sm"
-              className="px-4"
-            >
-              {isSending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
 }
+

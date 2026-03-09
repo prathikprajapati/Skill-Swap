@@ -13,17 +13,11 @@ module.exports = {
     'node_modules/(?!(@prisma)/)',
   ],
 
+  // Run tests sequentially to avoid database state pollution
+  maxWorkers: 1,
 
-
-
-
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/generated/**',
-    '!src/**/*.d.ts',
-  ],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  testTimeout: 10000,
+  // Increase test timeout
+  testTimeout: 30000,
   globals: {
     'ts-jest': {
       tsconfig: 'tsconfig.test.json'

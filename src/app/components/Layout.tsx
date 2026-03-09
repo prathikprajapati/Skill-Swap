@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { LayoutDashboard, User, Inbox, MessageSquare } from "lucide-react";
+import { LayoutDashboard, User, Inbox, MessageSquare, Settings } from "lucide-react";
 import Dock from "@/app/components/ui/Dock";
 import { PullToRefresh } from "@/app/components/PullToRefresh";
 import { useCallback } from "react";
@@ -36,6 +36,12 @@ export function Layout() {
       label: "Chat",
       onClick: () => navigate("/app/chat"),
       ariaLabel: "Go to Chat",
+    },
+    {
+      icon: <Settings size={18} />,
+      label: "Settings",
+      onClick: () => navigate("/app/settings"),
+      ariaLabel: "Go to Settings",
     },
   ];
 

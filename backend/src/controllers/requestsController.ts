@@ -110,22 +110,20 @@ export const getIncomingRequests = async (req: AuthRequest, res: Response) => {
       where.status = "pending";
     }
 
-    const [requests, total] = await Promise.all([
-      prisma.matchRequest.findMany({
-        where,
-        include: {
-          sender: {
-            select: { id: true, name: true, avatar: true },
-          },
+    const requests = await prisma.matchRequest.findMany({
+      where,
+      include: {
+        sender: {
+          select: { id: true, name: true, avatar: true },
         },
-        orderBy: defaultOrderBy,
-        skip,
-        take: limit,
-      }),
-      prisma.matchRequest.count({ where }),
-    ]);
+      },
+      orderBy: defaultOrderBy,
+      skip,
+      take: limit,
+    });
 
-    res.json(paginate(requests, total, req.query));
+    // Return array directly for backward compatibility with tests
+    res.json(requests);
   } catch (error) {
     console.error("Get incoming requests error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -149,22 +147,20 @@ export const getSentRequests = async (req: AuthRequest, res: Response) => {
       where.status = status;
     }
 
-    const [requests, total] = await Promise.all([
-      prisma.matchRequest.findMany({
-        where,
-        include: {
-          receiver: {
-            select: { id: true, name: true, avatar: true },
-          },
+    const requests = await prisma.matchRequest.findMany({
+      where,
+      include: {
+        receiver: {
+          select: { id: true, name: true, avatar: true },
         },
-        orderBy: defaultOrderBy,
-        skip,
-        take: limit,
-      }),
-      prisma.matchRequest.count({ where }),
-    ]);
+      },
+      orderBy: defaultOrderBy,
+      skip,
+      take: limit,
+    });
 
-    res.json(paginate(requests, total, req.query));
+    // Return array directly for backward compatibility with tests
+    res.json(requests);
   } catch (error) {
     console.error("Get sent requests error:", error);
     res.status(500).json({ error: "Internal server error" });

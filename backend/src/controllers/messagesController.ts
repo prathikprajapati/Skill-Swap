@@ -48,6 +48,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
+    // Return paginated response
     res.json(paginate(messages, total, req.query));
   } catch (error) {
     console.error("Get messages error:", error);

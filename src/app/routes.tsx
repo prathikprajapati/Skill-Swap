@@ -4,13 +4,14 @@ import { Layout } from "@/app/components/Layout";
 import { ProtectedRoute } from "@/app/components/ProtectedRoute";
 
 // Lazy load pages for better performance (code splitting)
-const AuthPage = lazy(() => import("@/app/pages/AuthPage").then(m => ({ default: m.AuthPage })));
-const LandingPage = lazy(() => import("@/app/pages/LandingPage").then(m => ({ default: m.LandingPage })));
-const DashboardPage = lazy(() => import("@/app/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
-const ProfilePage = lazy(() => import("@/app/pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
-const RequestsPage = lazy(() => import("@/app/pages/RequestsPage").then(m => ({ default: m.RequestsPage })));
-const ChatPage = lazy(() => import("@/app/pages/ChatPage").then(m => ({ default: m.ChatPage })));
-const OnboardingPage = lazy(() => import("@/app/pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
+const AuthPage = lazy(() => import("@/app/pages/AuthPage").then(m => ({ default: m.default })));
+const LandingPage = lazy(() => import("@/app/pages/LandingPage").then(m => ({ default: m.default })));
+const DashboardPage = lazy(() => import("@/app/pages/DashboardPage").then(m => ({ default: m.default })));
+const ProfilePage = lazy(() => import("@/app/pages/ProfilePage").then(m => ({ default: m.default })));
+const RequestsPage = lazy(() => import("@/app/pages/RequestsPage").then(m => ({ default: m.default })));
+const ChatPage = lazy(() => import("@/app/pages/ChatPage").then(m => ({ default: m.default })));
+const SettingsPage = lazy(() => import("@/app/pages/SettingsPage").then(m => ({ default: m.default })));
+const OnboardingPage = lazy(() => import("@/app/pages/OnboardingPage").then(m => ({ default: m.default })));
 
 // Loading fallback component
 function PageLoader() {
@@ -81,6 +82,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <ChatPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <SettingsPage />
           </Suspense>
         ),
       },

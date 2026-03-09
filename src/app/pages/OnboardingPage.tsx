@@ -85,3 +85,7 @@ export function OnboardingPage() {
     </div>
   );
 }
+
+/* ── Default Export ── */
+export default OnboardingPage;
+

@@ -2,7 +2,6 @@ import { RouterProvider } from "react-router";
 import { router } from "@/app/routes";
 import { ThemeProvider } from "@/app/contexts/ThemeContext";
 import { AuthProvider } from "@/app/contexts/AuthContext";
-import { ToastProvider } from "@/app/components/ui/Toast";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { SkipNavigation } from "@/app/components/SkipNavigation";
 import { QueryProvider } from "@/app/providers/QueryProvider";
@@ -17,7 +16,6 @@ function ServiceWorkerRegistration() {
 
   useEffect(() => {
     if (isUpdateAvailable) {
-      // Show update notification or auto-update
       console.log("[App] Service Worker update available");
     }
   }, [isUpdateAvailable]);
@@ -31,16 +29,15 @@ export default function App() {
       <QueryProvider>
         <ThemeProvider>
           <AuthProvider>
-            <ToastProvider>
-              <SkipNavigation />
-              <ServiceWorkerRegistration />
-              <main id="main-content" tabIndex={-1} className="outline-none">
-                <RouterProvider router={router} />
-              </main>
-            </ToastProvider>
+            <SkipNavigation />
+            <ServiceWorkerRegistration />
+            <main id="main-content" tabIndex={-1} className="min-h-screen bg-neutral-950">
+              <RouterProvider router={router} />
+            </main>
           </AuthProvider>
         </ThemeProvider>
       </QueryProvider>
     </ErrorBoundary>
   );
 }
+

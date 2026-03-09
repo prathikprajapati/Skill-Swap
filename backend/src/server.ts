@@ -66,7 +66,7 @@ const authLimiter = rateLimit({
 });
 
 // CORS middleware - Allow all localhost ports for development
-const corsOrigins = process.env.CORS_ORIGIN
+const corsOrigins: string[] = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",")
   : [
       "http://localhost:5173",
@@ -76,9 +76,39 @@ const corsOrigins = process.env.CORS_ORIGIN
       "http://localhost:5177",
     ];
 
+// Default CORS origin to use when no origin header is provided
+const defaultCorsOrigin = corsOrigins[0] || "http://localhost:5173";
+
+// Add explicit CORS headers for ALL requests (before cors middleware)
+app.use((req, res, next) => {
+  // Set CORS headers for all responses
+  const origin = req.headers.origin || defaultCorsOrigin;
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH");
+  next();
+});
+
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      // In production, you would want to be more restrictive
+      if (!origin || corsOrigins.includes(origin)) {
+        callback(null, origin || true);
+      } else {
+        // Check if origin matches any pattern (for dynamic origins)
+        const isAllowed = corsOrigins.some(o => 
+          origin?.startsWith(o.replace(/\/$/, '')) || o === '*'
+        );
+        if (isAllowed) {
+          callback(null, origin);
+        } else {
+          callback(null, corsOrigins[0]); // Fallback to first origin
+        }
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],

@@ -256,15 +256,31 @@ export const awardXP = async (req: AuthRequest, res: Response) => {
 
     const { action, amount } = req.body;
 
-    // Validate action against whitelist - only internal system actions allowed
-    // Users cannot manually award arbitrary XP actions
+    // If action is provided, validate it against whitelist
     if (action && !ALLOWED_XP_ACTIONS.includes(action)) {
       return res.status(400).json({
         error: "Invalid action. Only system actions are allowed.",
       });
     }
 
-    // Validate: either action must be in whitelist OR custom amount provided
+    // If amount is provided without action, reject it (prevent arbitrary XP)
+    if (amount && !action) {
+      return res.status(400).json({
+        error: "Invalid action or amount",
+      });
+    }
+
+    // Validate amount if provided - must be within allowed range
+    if (amount) {
+      const xpAmount = parseInt(amount);
+      if (isNaN(xpAmount) || xpAmount < 1 || xpAmount > 1000) {
+        return res.status(400).json({
+          error: "Amount must be between 1 and 1000",
+        });
+      }
+    }
+
+    // Get XP amount from action or validate provided amount
     const xpAmount =
       amount ||
       (action ? XP_VALUES[action as keyof typeof XP_VALUES] : undefined);

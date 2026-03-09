@@ -1,519 +1,252 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import {
-  Trophy,
-  Star,
-  Zap,
-  Target,
-  Award,
-  MessageCircle,
+import { motion } from "framer-motion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { 
+  MapPin, 
+  Calendar, 
+  Star, 
+  Award, 
+  BookOpen, 
+  GraduationCap,
   Settings,
-  X,
-  Loader2,
+  Edit
 } from "lucide-react";
-import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
-import { ThemeSelector } from "@/app/components/ThemeSelector";
-import { SkillChip } from "@/app/components/ui/skill-chip";
-import { useAuth } from "@/app/contexts/AuthContext";
-import { usersApi, type UserSkill } from "@/app/api/users";
-import { gamificationApi, type GamificationData } from "@/app/api/gamification";
-import { useQuery } from "@tanstack/react-query";
 
-export function ProfilePage() {
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-  const [offeredSkills, setOfferedSkills] = useState<UserSkill[]>([]);
-  const [wantedSkills, setWantedSkills] = useState<UserSkill[]>([]);
-  const [skillsLoading, setSkillsLoading] = useState(true);
-  const { user } = useAuth();
+/* ── Mock Profile Data ── */
+const PROFILE = {
+  name: "Alex Johnson",
+  bio: "Full-stack developer passionate about learning and sharing knowledge. Always eager to connect with fellow learners!",
+  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+  location: "San Francisco, CA",
+  joinedDate: "January 2024",
+  xp: 2450,
+  level: 12,
+  rating: 4.8,
+  completedSwaps: 28,
+  teachSkills: [
+    { name: "React Development", proficiency: "Expert", category: "Frontend" },
+    { name: "TypeScript", proficiency: "Advanced", category: "Languages" },
+    { name: "Node.js", proficiency: "Intermediate", category: "Backend" },
+  ],
+  learnSkills: [
+    { name: "UI/UX Design", progress: 45 },
+    { name: "Python", progress: 20 },
+    { name: "Data Science", progress: 10 },
+  ],
+  achievements: [
+    { name: "Quick Learner", icon: "🚀", description: "Completed 5 skill swaps in first month" },
+    { name: "Top Mentor", icon: "🏆", description: "Rated 4.9+ by learners" },
+    { name: "Bookworm", icon: "📚", description: "Shared 50+ learning resources" },
+  ],
+};
 
-  // Fetch user skills
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setSkillsLoading(true);
-        const userData = await usersApi.getMe();
-        setOfferedSkills(userData.offeredSkills || []);
-        setWantedSkills(userData.wantedSkills || []);
-      } catch (err) {
-        console.error("Failed to fetch profile data:", err);
-      } finally {
-        setSkillsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Fetch gamification data with React Query
-  const { 
-    data: gamificationData, 
-    isLoading: gamificationLoading, 
-  } = useQuery<GamificationData>({
-    queryKey: ['gamificationStats'],
-    queryFn: () => gamificationApi.getStats(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Calculate level from XP
-  const xpCurrent = gamificationData?.xp || (user as any)?.xp || 0;
-  const achievements = gamificationData?.achievements || [];
-  
-  const getLevelInfo = (xp: number) => {
-    if (xp < 100) return { level: 1, title: "Novice", nextLevel: 100, nextLevelXP: 100 };
-    if (xp < 300) return { level: 2, title: "Apprentice", nextLevel: 300, nextLevelXP: 300 };
-    if (xp < 600) return { level: 3, title: "Practitioner", nextLevel: 600, nextLevelXP: 600 };
-    if (xp < 1000) return { level: 4, title: "Expert", nextLevel: 1000, nextLevelXP: 1000 };
-    return { level: 5, title: "Master", nextLevel: 2000, nextLevelXP: 2000 };
-  };
-  
-  const levelInfo = gamificationData?.level || getLevelInfo(xpCurrent);
-  const xpForNextLevel = levelInfo.nextLevelXP || 100;
-  const progressPercentage = gamificationData?.level?.progress || Math.min((xpCurrent / xpForNextLevel) * 100, 100);
-
-  // Combined loading state
-  const isLoading = skillsLoading || gamificationLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-12 h-12 animate-spin" style={{ color: "var(--primary)" }} />
-      </div>
-    );
-  }
-
-  // Get user name safely
-  const userName = (user as any)?.name || "User";
-  const userEmail = (user as any)?.email || "";
-  const userAvatar = (user as any)?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200";
-
+/* ── Stats Card Component ── */
+function StatCard({ icon: Icon, label, value }: { icon: any; label: string; value: string | number }) {
   return (
-    <div className="max-w-[1200px] mx-auto pb-20">
-      <motion.h2
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-[42px] mb-8"
-        style={{ color: "var(--ivory)", fontWeight: 700 }}
-      >
-        Your Profile
-      </motion.h2>
-
-      <div className="grid grid-cols-12 gap-8">
-        {/* Left Column - ID Card */}
-        <div className="col-span-4">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="p-8 rounded-2xl border-2 relative overflow-hidden"
-            style={{
-              backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
-              boxShadow: "var(--neon-glow)",
-            }}
-          >
-            {/* Background Pattern */}
-            <div
-              className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-20"
-              style={{ backgroundColor: "var(--primary)" }}
-            />
-
-            {/* Avatar with Level Badge */}
-            <div className="relative w-32 h-32 mx-auto mb-6">
-              <div
-                className="w-full h-full rounded-full overflow-hidden border-4"
-                style={{ borderColor: "var(--primary)" }}
-              >
-                <ImageWithFallback
-                  src={(user as any)?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200"}
-                  alt={(user as any)?.name || "User"}
-                  className="w-full h-full object-cover"
-                  width={128}
-                  height={128}
-                />
-              </div>
-              {/* Level Badge - on border */}
-              <div
-                className="absolute -bottom-2 -right-2 w-14 h-14 rounded-full flex flex-col items-center justify-center border-4"
-                style={{
-                  backgroundColor: "var(--primary)",
-                  borderColor: "var(--card)",
-                  boxShadow: "var(--neon-glow)",
-                }}
-              >
-                <span
-                  className="text-[9px] font-bold"
-                  style={{ color: "var(--background)" }}
-                >
-                  LVL
-                </span>
-                <span
-                  className="text-[16px] font-bold leading-none"
-                  style={{ color: "var(--background)" }}
-                >
-                  {levelInfo.level}
-                </span>
-              </div>
-            </div>
-
-            {/* User Info */}
-            <h3
-              className="text-[24px] text-center mb-2"
-              style={{ color: "var(--text-primary)", fontWeight: 700 }}
-            >
-              {userName}
-            </h3>
-            <p
-              className="text-[14px] text-center mb-6"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {userEmail}
-            </p>
-
-            {/* Skills Section */}
-            <div className="mb-6">
-              <p className="text-[12px] mb-2" style={{ color: "var(--text-secondary)" }}>
-                Skills ({offeredSkills.length + wantedSkills.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {offeredSkills.slice(0, 3).map((skill) => (
-                  <SkillChip key={skill.id} skill={skill.name} type="offer" size="sm" />
-                ))}
-                {wantedSkills.slice(0, 3).map((skill) => (
-                  <SkillChip key={skill.id} skill={skill.name} type="want" size="sm" />
-                ))}
-                {(offeredSkills.length + wantedSkills.length) > 6 && (
-                  <span 
-                    className="text-xs px-2 py-1 rounded-full"
-                    style={{ 
-                      backgroundColor: "var(--secondary)", 
-                      color: "var(--text-tertiary)" 
-                    }}
-                  >
-                    +{(offeredSkills.length + wantedSkills.length) - 6} more
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* XP Progress Bar */}
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span
-                  className="text-[12px]"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {levelInfo.title}
-                </span>
-                <span
-                  className="text-[12px] font-bold"
-                  style={{ color: "var(--primary)" }}
-                >
-                  {xpCurrent} / {xpForNextLevel} XP
-                </span>
-              </div>
-              <div
-                className="w-full h-3 rounded-full overflow-hidden"
-                style={{ backgroundColor: "var(--secondary)" }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercentage}%` }}
-                  transition={{ duration: 1, delay: 0.3 }}
-                  className="h-full rounded-full"
-                  style={{
-                    backgroundColor: "var(--primary)",
-                    boxShadow: "0 0 10px var(--primary)",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              <div
-                className="p-3 rounded-xl text-center"
-                style={{ backgroundColor: "var(--section-bg)" }}
-              >
-                <Trophy className="w-5 h-5 mx-auto mb-1" style={{ color: "var(--primary)" }} />
-                <p
-                  className="text-[18px] font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {achievements.filter(a => a.unlocked).length}
-                </p>
-                <p
-                  className="text-[10px]"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  Badges
-                </p>
-              </div>
-              <div
-                className="p-3 rounded-xl text-center"
-                style={{ backgroundColor: "var(--section-bg)" }}
-              >
-                <MessageCircle className="w-5 h-5 mx-auto mb-1" style={{ color: "var(--accent)" }} />
-                <p
-                  className="text-[18px] font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {offeredSkills.length + wantedSkills.length}
-                </p>
-                <p
-                  className="text-[10px]"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  Matches
-                </p>
-              </div>
-              <div
-                className="p-3 rounded-xl text-center"
-                style={{ backgroundColor: "var(--section-bg)" }}
-              >
-                <Zap className="w-5 h-5 mx-auto mb-1" style={{ color: "var(--warning)" }} />
-                <p
-                  className="text-[18px] font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {offeredSkills.length}
-                </p>
-                <p
-                  className="text-[10px]"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  Skills
-                </p>
-              </div>
-            </div>
-
-            {/* Advanced Settings Button */}
-            <button
-              onClick={() => setShowAdvancedSettings(true)}
-              className="w-full p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all hover:scale-105"
-              aria-label="Open advanced settings"
-              style={{
-                borderColor: "var(--border)",
-                color: "var(--text-primary)",
-              }}
-            >
-              <Settings className="w-5 h-5" />
-              <span className="font-medium">Advanced Settings</span>
-            </button>
-          </motion.div>
+    <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-neutral-700/50 rounded-lg flex items-center justify-center">
+          <Icon className="w-5 h-5 text-white" />
         </div>
-
-        {/* Right Column - Achievements */}
-        <div className="col-span-8">
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="p-8 rounded-2xl border-2"
-            style={{
-              backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
-            }}
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <Award className="w-6 h-6" style={{ color: "var(--primary)" }} />
-              <h2
-                className="text-[28px]"
-                style={{ color: "var(--text-primary)", fontWeight: 700 }}
-              >
-                Achievements
-              </h2>
-            </div>
-
-            <p
-              className="text-[14px] mb-8"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Unlock badges by completing challenges and reaching milestones
-            </p>
-
-            <div className="grid grid-cols-5 gap-6">
-              {achievements.map((achievement, index) => (
-                <motion.div
-                  key={achievement.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="flex flex-col items-center group cursor-pointer"
-                >
-                  <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-2 border-2 transition-all ${
-                      achievement.unlocked
-                        ? "group-hover:scale-110"
-                        : "opacity-30 grayscale"
-                    }`}
-                    style={{
-                      backgroundColor: achievement.unlocked
-                        ? "var(--primary)"
-                        : "var(--secondary)",
-                      borderColor: achievement.unlocked
-                        ? "var(--primary-dark)"
-                        : "var(--border)",
-                      boxShadow: achievement.unlocked
-                        ? "var(--neon-glow)"
-                        : "none",
-                    }}
-                  >
-                    {achievement.icon}
-                  </div>
-                  <p
-                    className="text-[11px] text-center"
-                    style={{
-                      color: achievement.unlocked
-                        ? "var(--text-primary)"
-                        : "var(--text-disabled)",
-                      fontWeight: achievement.unlocked ? 600 : 400,
-                    }}
-                  >
-                    {achievement.title}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+        <div>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          <p className="text-sm text-neutral-400">{label}</p>
         </div>
       </div>
-
-      {/* Advanced Settings Modal */}
-      <AnimatePresence>
-        {showAdvancedSettings && (
-          <>
-            {/* Blur Veil */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 backdrop-blur-md"
-              style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}
-              onClick={() => setShowAdvancedSettings(false)}
-            />
-
-            {/* Modal - 60% width, centered */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] max-h-[80vh] z-50 rounded-2xl border-2 overflow-hidden"
-              style={{
-                backgroundColor: "var(--card)",
-                borderColor: "var(--glass-border)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div
-                className="p-6 border-b-2 flex items-center justify-between"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <h2
-                  className="text-[28px]"
-                  style={{ color: "var(--text-primary)", fontWeight: 700 }}
-                >
-                  Advanced Settings
-                </h2>
-                <button
-                  onClick={() => setShowAdvancedSettings(false)}
-                  className="p-2 rounded-full transition-all hover:scale-110"
-                  aria-label="Close advanced settings"
-                  style={{
-                    backgroundColor: "var(--secondary)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(80vh-100px)]">
-                {/* Theme Section */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: "var(--primary)" }}
-                    >
-                      <Star className="w-5 h-5" style={{ color: "var(--background)" }} />
-                    </div>
-                    <h3
-                      className="text-[20px]"
-                      style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                    >
-                      Appearance
-                    </h3>
-                  </div>
-                  <ThemeSelector />
-                </div>
-
-                {/* Notifications Section */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: "var(--accent)" }}
-                    >
-                      <MessageCircle className="w-5 h-5" style={{ color: "var(--background)" }} />
-                    </div>
-                    <h3
-                      className="text-[20px]"
-                      style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                    >
-                      Notifications
-                    </h3>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-4 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--section-bg)" }}>
-                      <span style={{ color: "var(--text-primary)" }}>New match requests</span>
-                      <input type="checkbox" defaultChecked className="w-5 h-5" style={{ accentColor: "var(--primary)" }} />
-                    </label>
-                    <label className="flex items-center justify-between p-4 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--section-bg)" }}>
-                      <span style={{ color: "var(--text-primary)" }}>Messages</span>
-                      <input type="checkbox" defaultChecked className="w-5 h-5" style={{ accentColor: "var(--primary)" }} />
-                    </label>
-                    <label className="flex items-center justify-between p-4 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--section-bg)" }}>
-                      <span style={{ color: "var(--text-primary)" }}>Achievement unlocks</span>
-                      <input type="checkbox" className="w-5 h-5" style={{ accentColor: "var(--primary)" }} />
-                    </label>
-                  </div>
-                </div>
-
-                {/* Privacy Section */}
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: "var(--warning)" }}
-                    >
-                      <Target className="w-5 h-5" style={{ color: "var(--background)" }} />
-                    </div>
-                    <h3
-                      className="text-[20px]"
-                      style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                    >
-                      Privacy
-                    </h3>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-4 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--section-bg)" }}>
-                      <span style={{ color: "var(--text-primary)" }}>Profile visibility</span>
-                      <input type="checkbox" defaultChecked className="w-5 h-5" style={{ accentColor: "var(--primary)" }} />
-                    </label>
-                    <label className="flex items-center justify-between p-4 rounded-lg cursor-pointer" style={{ backgroundColor: "var(--section-bg)" }}>
-                      <span style={{ color: "var(--text-primary)" }}>Show online status</span>
-                      <input type="checkbox" defaultChecked className="w-5 h-5" style={{ accentColor: "var(--primary)" }} />
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
+
+/* ── Skill Progress Bar ── */
+function SkillProgress({ name, progress }: { name: string; progress: number }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm">
+        <span className="text-white font-medium">{name}</span>
+        <span className="text-neutral-400">{progress}%</span>
+      </div>
+      <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Profile Page ── */
+export default function ProfilePage() {
+  return (
+    <div className="min-h-screen py-8 px-4 md:px-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Profile Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8"
+        >
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            {/* Avatar */}
+            <div className="relative">
+              <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-neutral-700">
+                <AvatarImage src={PROFILE.avatar} alt={PROFILE.name} />
+                <AvatarFallback className="text-4xl bg-neutral-800">
+                  {PROFILE.name.split(" ").map(n => n[0]).join("")}
+                </AvatarFallback>
+              </Avatar>
+              <button className="absolute bottom-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
+                <Edit className="w-4 h-4 text-neutral-900" />
+              </button>
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-white">{PROFILE.name}</h1>
+                  <p className="text-neutral-400 mt-1">{PROFILE.bio}</p>
+                </div>
+                <Button 
+                  onClick={() => window.location.href = '/app/settings'}
+                  variant="outline" 
+                  className="border-neutral-700 text-white hover:bg-neutral-800"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-4 text-neutral-400">
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4" />
+                  <span>{PROFILE.location}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>Joined {PROFILE.joinedDate}</span>
+                </div>
+              </div>
+
+              {/* XP & Level */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  <span className="text-white font-semibold">Level {PROFILE.level}</span>
+                </div>
+                <div className="flex-1 max-w-xs">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">XP</span>
+                    <span className="text-white">{PROFILE.xp} / 3000</span>
+                  </div>
+                  <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full"
+                      style={{ width: `${(PROFILE.xp / 3000) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard icon={Star} label="Rating" value={PROFILE.rating} />
+          <StatCard icon={BookOpen} label="Completed" value={PROFILE.completedSwaps} />
+          <StatCard icon={GraduationCap} label="Teaching" value={PROFILE.teachSkills.length} />
+          <StatCard icon={Award} label="Achievements" value={PROFILE.achievements.length} />
+        </div>
+
+        {/* Teach Skills */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-blue-400" />
+              Skills I Teach
+            </h2>
+          </div>
+          <div className="space-y-4">
+            {PROFILE.teachSkills.map((skill) => (
+              <div key={skill.name} className="flex items-center justify-between p-4 bg-neutral-800/50 rounded-xl">
+                <div>
+                  <p className="text-white font-medium">{skill.name}</p>
+                  <p className="text-sm text-neutral-400">{skill.category}</p>
+                </div>
+                <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm font-medium">
+                  {skill.proficiency}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Learn Skills */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-purple-400" />
+              Skills I'm Learning
+            </h2>
+          </div>
+          <div className="space-y-4">
+            {PROFILE.learnSkills.map((skill) => (
+              <SkillProgress key={skill.name} name={skill.name} progress={skill.progress} />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Achievements */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Award className="w-5 h-5 text-yellow-400" />
+              Achievements
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {PROFILE.achievements.map((achievement) => (
+              <div key={achievement.name} className="p-4 bg-neutral-800/50 rounded-xl text-center">
+                <div className="text-4xl mb-2">{achievement.icon}</div>
+                <p className="text-white font-semibold">{achievement.name}</p>
+                <p className="text-sm text-neutral-400 mt-1">{achievement.description}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Edit Info Note */}
+        <div className="text-center">
+          <p className="text-neutral-500 text-sm">
+            Want to edit your profile?{" "}
+            <button 
+              onClick={() => window.location.href = '/app/settings'}
+              className="text-white underline hover:text-neutral-300"
+            >
+              Go to Settings
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+

@@ -1,365 +1,322 @@
-"use client";
-
-import { useState, useEffect, lazy, Suspense } from "react";
-import { motion } from "motion/react";
-import GlassFolder from "@/app/components/GlassFolder";
-import { CategoryModal } from "@/app/components/ui/category-modal";
-import { useAuth } from "@/app/contexts/AuthContext";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ProfileCard } from "@/components/ruixen/profile-card";
+import { Button } from "@/components/ui/button";
 import { 
-  MatchRecommendations, 
-  ProfileCompletionCard, 
-  SkillsSummaryCard, 
-  ActivityCard 
-} from "@/app/components/dashboard";
+  Search,
+  Filter,
+  TrendingUp,
+  Clock,
+  Star,
+  Sparkles,
+  ChevronRight,
+  Users,
+  BookOpen,
+  GraduationCap
+} from "lucide-react";
 
-// Lazy load heavy component for performance
-const Book = lazy(() => import("@/app/components/Book").then(m => ({ default: m.Book })));
-
-// Loading fallback for Book component
-function BookLoader() {
-  return (
-    <div className="w-full max-w-5xl mx-auto h-[600px] flex items-center justify-center rounded-2xl" style={{ backgroundColor: 'var(--section-bg)' }}>
-      <div className="flex flex-col items-center gap-4">
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: 'var(--primary)', borderTopColor: 'transparent' }}
-        />
-        <p style={{ color: 'var(--text-secondary)' }}>Loading featured matches...</p>
-      </div>
-    </div>
-  );
-}
-
-const typingWords = ["Java", "Python", "French", "Japanese", "Marketing", "Stock Basics", "SQL", "React", "Design", "Photography"];
-
-const testimonials = [
-  { id: 1, name: "Sarah Chen", text: "Found an amazing mentor for React. My coding skills improved 10x!" },
-  { id: 2, name: "Mike Johnson", text: "Teaching others helped me understand concepts better. Win-win!" },
-  { id: 3, name: "Emma Davis", text: "Connected with professionals worldwide. Best platform ever!" },
-  { id: 4, name: "Alex Kumar", text: "Learned Japanese from a native speaker. Absolutely incredible experience!" },
-  { id: 5, name: "Lisa Wang", text: "My marketing skills went from zero to hero. Thank you Skill Swap!" },
-  { id: 6, name: "Tom Brown", text: "Teaching SQL helped me land my dream job. Forever grateful!" },
+/* ── Mock User Data ── */
+const MOCK_USERS = [
+  {
+    id: "1",
+    name: "Mia Tanaka",
+    bio: "Visual storyteller blending minimalism with bold aesthetics.",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop",
+    followers: 1847,
+    posts: 124,
+    verified: true,
+    teachSkill: "UI/UX Design",
+    learnSkill: "React Development",
+  },
+  {
+    id: "2",
+    name: "James Wilson",
+    bio: "Full-stack developer passionate about clean code and scalable systems.",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop",
+    followers: 2341,
+    posts: 89,
+    verified: true,
+    teachSkill: "React & TypeScript",
+    learnSkill: "UI Design",
+  },
+  {
+    id: "3",
+    name: "Emma Chen",
+    bio: "Product designer with a focus on accessibility and inclusive design.",
+    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=500&fit=crop",
+    followers: 1567,
+    posts: 67,
+    verified: false,
+    teachSkill: "Figma & Prototyping",
+    learnSkill: "Backend Development",
+  },
+  {
+    id: "4",
+    name: "David Kim",
+    bio: "Mobile app developer specializing in React Native and Flutter.",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=500&fit=crop",
+    followers: 3421,
+    posts: 201,
+    verified: true,
+    teachSkill: "Mobile Development",
+    learnSkill: "Machine Learning",
+  },
+  {
+    id: "5",
+    name: "Sarah Johnson",
+    bio: "Data scientist with a passion for visualization and storytelling.",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop",
+    followers: 987,
+    posts: 45,
+    verified: true,
+    teachSkill: "Python & Data Science",
+    learnSkill: "Frontend Development",
+  },
+  {
+    id: "6",
+    name: "Alex Rivera",
+    bio: "DevOps engineer helping teams ship faster with CI/CD pipelines.",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=500&fit=crop",
+    followers: 1876,
+    posts: 112,
+    verified: true,
+    teachSkill: "DevOps & Cloud",
+    learnSkill: "Mobile Development",
+  },
 ];
 
-const categories = [
-  { id: 1, name: "Programming", icon: "💻" },
-  { id: 2, name: "Soft Skills", icon: "🗣️" },
-  { id: 3, name: "Languages", icon: "🌍" },
-  { id: 4, name: "Design", icon: "🎨" },
-  { id: 5, name: "Business", icon: "💼" },
-  { id: 6, name: "Music", icon: "🎵" },
+/* ── Skill Tags ── */
+const SKILL_TAGS = [
+  "UI/UX Design",
+  "React",
+  "TypeScript",
+  "Python",
+  "Mobile Dev",
+  "Data Science",
+  "Machine Learning",
+  "DevOps",
+  "Figma",
+  "Node.js",
 ];
 
-export function DashboardPage() {
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const { user } = useAuth();
-  
-  const progressPercentage = user?.profile_completion || 0;
+/* ── Dashboard Hero Section ── */
+function DashboardHero() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const visualRef = useRef<HTMLDivElement>(null);
 
-  const waveGif = "https://images.unsplash.com/photo-1680182784939-45e8755efaab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXJ0b29uJTIwY2F0JTIwd2F2aW5nJTIwaGVsbG8lMjBmcmllbmRseXxlbnwxfHx8fDE3NzI0NzY1Nzd8MA&ixlib=rb-4.1.0&q=80&w=1080";
-
-  // Typing animation effect
   useEffect(() => {
-    const word = typingWords[currentWordIndex];
-    const timeout = setTimeout(
-      () => {
-        if (!isDeleting) {
-          if (displayedText.length < word.length) {
-            setDisplayedText(word.slice(0, displayedText.length + 1));
-          } else {
-            setTimeout(() => setIsDeleting(true), 2000);
-          }
-        } else {
-          if (displayedText.length > 0) {
-            setDisplayedText(displayedText.slice(0, -1));
-          } else {
-            setIsDeleting(false);
-            setCurrentWordIndex((prev) => (prev + 1) % typingWords.length);
-          }
-        }
-      },
-      isDeleting ? 50 : 150
-    );
-
-    return () => clearTimeout(timeout);
-  }, [displayedText, isDeleting, currentWordIndex]);
+    const ctx = gsap.context(() => {
+      // Animate text
+      gsap.fromTo(textRef.current,
+        { opacity: 0, x: -50 },
+        { opacity: 1, x: 0, duration: 1, ease: "power3.out" as const }
+      );
+      
+      // Animate visual
+      gsap.fromTo(visualRef.current,
+        { opacity: 0, x: 50 },
+        { opacity: 1, x: 0, duration: 1, ease: "power3.out" as const, delay: 0.3 }
+      );
+    }, heroRef);
+    
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <div className="relative">
-      {/* Hero Section */}
-      <section
-        className="min-h-[80vh] flex items-center justify-center px-8 py-16"
-        style={{ backgroundColor: "var(--background)" }}
-      >
-        <div className="w-full max-w-7xl mx-auto grid grid-cols-12 gap-8">
-          {/* Left Content - 70% */}
-          <div className="col-span-12 lg:col-span-7 flex flex-col justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h1
-                className="text-[56px] mb-4"
-                style={{ color: "var(--ivory)", fontWeight: 700, lineHeight: 1.2 }}
-              >
-                Hello Learner!!!
-              </h1>
-
-              <h2
-                className="text-[32px] mb-8"
-                style={{ color: "var(--text-secondary)", fontWeight: 400, lineHeight: 1.4 }}
-              >
-                What do you want to learn{" "}
-                <span
-                  className="inline-block min-w-[200px]"
-                  style={{ color: "var(--primary)", fontWeight: 600 }}
-                >
-                  {displayedText}
-                  <span className="animate-pulse">|</span>
-                </span>
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className="mt-8"
-            >
-              <div
-                className="w-32 h-[2px] mb-6"
-                style={{ backgroundColor: "var(--primary)" }}
-              />
-              <h3
-                className="text-[24px] mb-3"
-                style={{ color: "var(--primary)", fontWeight: 600 }}
-              >
-                Grab Whatever You Can
-              </h3>
-
-              <p
-                className="text-[16px] max-w-xl"
-                style={{ color: "var(--text-secondary)", lineHeight: 1.8 }}
-              >
-                Connect with learners and experts worldwide. Share your knowledge,
-                learn new skills, and grow together in our vibrant community.
-              </p>
-            </motion.div>
-          </div>
-
-          {/* Right Content - 30% */}
-          <div className="col-span-12 lg:col-span-5 flex items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="w-full max-w-sm"
-            >
-              <img
-                src={waveGif}
-                alt="Waving character"
-                width={400}
-                height={400}
-                className="w-full h-auto rounded-2xl"
-                style={{
-                  filter: "drop-shadow(0 0 40px var(--primary))",
-                }}
-              />
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Testimonials Scrolling */}
-        <div className="absolute bottom-0 left-0 right-0 pb-8 overflow-hidden">
-          {/* Scrolling Left */}
-          <div className="flex whitespace-nowrap animate-scroll-left mb-4">
-            {[...testimonials, ...testimonials].map((testimonial, idx) => (
-              <div
-                key={`left-${idx}`}
-                className="inline-flex items-center mx-4 px-6 py-3 rounded-full border backdrop-blur-sm"
-                style={{
-                  backgroundColor: "var(--glass-bg)",
-                  borderColor: "var(--glass-border)",
-                }}
-              >
-                <span
-                  className="text-[14px] mr-2"
-                  style={{ color: "var(--primary)", fontWeight: 600 }}
-                >
-                  {testimonial.name}:
-                </span>
-                <span
-                  className="text-[14px]"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {testimonial.text}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Scrolling Right */}
-          <div className="flex whitespace-nowrap animate-scroll-right">
-            {[...testimonials.slice().reverse(), ...testimonials.slice().reverse()].map(
-              (testimonial, idx) => (
-                <div
-                  key={`right-${idx}`}
-                  className="inline-flex items-center mx-4 px-6 py-3 rounded-full border backdrop-blur-sm"
-                  style={{
-                    backgroundColor: "var(--glass-bg)",
-                    borderColor: "var(--glass-border)",
-                  }}
-                >
-                  <span
-                    className="text-[14px] mr-2"
-                    style={{ color: "var(--accent)", fontWeight: 600 }}
-                  >
-                    {testimonial.name}:
-                  </span>
-                  <span
-                    className="text-[14px]"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    {testimonial.text}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Book Component Section - Lazy Loaded */}
-      <section
-        className="min-h-screen flex items-center justify-center px-8 py-16"
-        style={{ backgroundColor: "var(--section-bg)" }}
-      >
-        <Suspense fallback={<BookLoader />}>
-          <Book />
-        </Suspense>
-      </section>
-
-      {/* Divider */}
-      <div className="flex items-center justify-center py-12">
-        <div
-          className="w-full max-w-4xl h-[2px]"
-          style={{
-            background: `linear-gradient(to right, transparent, var(--primary), transparent)`,
-          }}
-        />
-      </div>
-
-      {/* Glass Folders Section */}
-      <section
-        className="min-h-screen flex items-center justify-center px-8 py-16"
-        style={{ backgroundColor: "var(--background)" }}
-      >
-        <div className="w-full max-w-7xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-[42px] text-center mb-16"
-            style={{ color: "var(--ivory)", fontWeight: 700 }}
-          >
-            Explore Categories
-          </motion.h2>
-
-          <div className="grid grid-cols-3 gap-12 justify-items-center">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => setSelectedCategory(category.id)}
-                className="cursor-pointer"
-              >
-                <GlassFolder icon={<span className="text-5xl">{category.icon}</span>} />
-                <p
-                  className="text-center mt-4 text-[18px]"
-                  style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                >
-                  {category.name}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Main Dashboard Content */}
-      <section
-        className="px-8 py-16"
-        style={{ backgroundColor: "var(--section-bg)" }}
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 
-              className="text-[32px] mb-2"
-              style={{ color: 'var(--text-primary)', fontWeight: 600 }}
-            >
-              Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
+    <section ref={heroRef} className="py-12 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-8 items-center">
+          {/* Left - Text Content (70%) */}
+          <div ref={textRef} className="lg:col-span-5 space-y-6">
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm text-white/80">Welcome back!</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+              Find Your Perfect
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                Skill Partner
+              </span>
             </h1>
-            <p 
-              className="text-[16px]"
-              style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}
-            >
-              Find people who complement your skills and start learning today
+            
+            <p className="text-lg text-neutral-400 max-w-xl">
+              Connect with learners who need your expertise and teachers who can help you grow. 
+              Start swapping skills today.
             </p>
+
+            {/* Quick Stats */}
+            <div className="flex flex-wrap gap-6 pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">12K+</p>
+                  <p className="text-sm text-neutral-400">Active Users</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">5K+</p>
+                  <p className="text-sm text-neutral-400">Skills Shared</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">98%</p>
+                  <p className="text-sm text-neutral-400">Success Rate</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Search & Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="Search skills or users..."
+                  className="w-full pl-11 pr-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition-all"
+                />
+              </div>
+              <Button variant="outline" className="border-neutral-700 text-white hover:bg-neutral-800">
+                <Filter className="w-5 h-5 mr-2" />
+                Filters
+              </Button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-8">
-            {/* Match Recommendations - 8 columns */}
-            <MatchRecommendations />
-
-            {/* Sidebar - 4 columns */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              <ProfileCompletionCard progressPercentage={progressPercentage} />
-              <SkillsSummaryCard 
-                offeredSkills={user?.offeredSkills || []}
-                wantedSkills={user?.wantedSkills || []}
-              />
-              <ActivityCard activeMatches={2} pendingRequests={3} />
+          {/* Right - Visual (30%) */}
+          <div ref={visualRef} className="lg:col-span-2 hidden lg:block">
+            <div className="relative">
+              {/* Decorative SVG */}
+              <svg viewBox="0 0 400 400" className="w-full h-auto">
+                <defs>
+                  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#3b82f6', stopOpacity: 0.8 }} />
+                    <stop offset="100%" style={{ stopColor: '#8b5cf6', stopOpacity: 0.8 }} />
+                  </linearGradient>
+                </defs>
+                <circle cx="200" cy="200" r="150" fill="url(#grad1)" opacity="0.3" />
+                <circle cx="200" cy="200" r="100" fill="url(#grad1)" opacity="0.5" />
+                <circle cx="200" cy="200" r="50" fill="url(#grad1)" opacity="0.8" />
+                <text x="200" y="210" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
+                  Skill Swap
+                </text>
+              </svg>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Category Modal */}
-      {selectedCategory && (
-        <CategoryModal
-          category={categories.find((c) => c.id === selectedCategory)!}
-          onClose={() => setSelectedCategory(null)}
-        />
-      )}
-
-      <style>{`
-        @keyframes scroll-left {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-
-        @keyframes scroll-right {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
-        }
-
-        .animate-scroll-left {
-          animation: scroll-left 30s linear infinite;
-        }
-
-        .animate-scroll-right {
-          animation: scroll-right 30s linear infinite;
-        }
-      `}</style>
-    </div>
+      </div>
+    </section>
   );
 }
 
+/* ── Skill Filters ── */
+function SkillFilters() {
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
+  return (
+    <section className="py-6 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Teach/Learn Toggle */}
+          <div className="flex items-center gap-2 bg-neutral-800/50 rounded-xl p-1">
+            <button className="px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm font-medium transition-colors">
+              Teach
+            </button>
+            <button className="px-4 py-2 text-neutral-400 hover:text-white rounded-lg text-sm font-medium transition-colors">
+              Learn
+            </button>
+          </div>
+
+          {/* Skill Tags */}
+          <div className="flex flex-wrap gap-2">
+            {SKILL_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setActiveFilter(activeFilter === tag ? null : tag)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  activeFilter === tag
+                    ? "bg-white text-neutral-900"
+                    : "bg-neutral-800/50 text-neutral-400 hover:text-white hover:bg-neutral-800"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── User Cards Grid ── */
+function UserCardsSection() {
+  return (
+    <section className="py-8 px-4 md:px-8 pb-16">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold text-white">Recommended for You</h2>
+          <Button variant="ghost" className="text-neutral-400 hover:text-white">
+            View All
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {MOCK_USERS.map((user) => (
+            <motion.div
+              key={user.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <ProfileCard
+                variant="half"
+                image={user.image}
+                name={user.name}
+                bio={user.bio}
+                followers={user.followers}
+                posts={user.posts}
+                verified={user.verified}
+                onFollow={() => console.log("Follow:", user.id)}
+                onFavorite={(fav) => console.log("Favorite:", user.id, fav)}
+              />
+              {/* Skill info below card */}
+              <div className="mt-3 flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-blue-400" />
+                  <span className="text-neutral-400">Teaches: </span>
+                  <span className="text-white">{user.teachSkill}</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Main Dashboard Page ── */
+export default function DashboardPage() {
+  return (
+    <div className="min-h-screen">
+      <DashboardHero />
+      <SkillFilters />
+      <UserCardsSection />
+    </div>
+  );
+}
